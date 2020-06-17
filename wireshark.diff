@@ -1,0 +1,12 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 559a1522dc..2d45a6001f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1441,6 +1441,7 @@ if(ENABLE_PLUGINS)
+        set_target_properties(plugins PROPERTIES FOLDER "Plugins")
+        set(PLUGIN_SRC_DIRS
+                plugins/epan/ethercat
++               plugins/epan/t3z0s
+                plugins/epan/gryphon
+                plugins/epan/irda
+                plugins/epan/mate

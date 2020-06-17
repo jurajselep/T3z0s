@@ -1,0 +1,30 @@
+[package]
+name = "t3z0s_rs"
+version = "0.1.0"
+authors = ["Daniel Fiala <freelancer@meave.biz>"]
+edition = "2018"
+
+[lib]
+name = "t3z0s_rs"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
+# Dynamic library has more complicated linking, let'd disable it now...
+#crate-type = ["staticlib", "cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2.0"
+lazy_static = "1.4.0"
+crypto = { version="*", git = "https://github.com/simplestaking/tezedge" }
+failure = "0.1"
+hex = "0.4.2"
+networking = { version="*", git = "https://github.com/simplestaking/tezedge" }
+tezos_messages = { version="*", git = "https://github.com/simplestaking/tezedge" }
+tezos_encoding = { version="*", git = "https://github.com/simplestaking/tezedge" }
+storage = { version = "*", git = "htps://github.com/simplestaking/tezedge" }
+
+serde = { version="1.0", features=["derive"] }
+serde_json = "1.0"
+#hex = "0.4"
+bytes = "0.5"
