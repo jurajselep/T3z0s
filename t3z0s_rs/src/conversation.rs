@@ -51,6 +51,20 @@ use crate::error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, Unknown
 use crate::configuration::{get_configuration, Config};
 
 use crate::dissector_info::T3zosDissectorInfo;
+use crate::get_ref;
+
+type ConversationKey = u64;
+
+#[derive(Debug, Clone)]
+struct ConversationItem {
+    counter: u64,
+    srcaddr: Option<SocketAddr>,
+    dstaddr: Option<SocketAddr>,
+    conn_msg: Option<String>,
+    decrypted_msg: Option<String>,
+    direction: Option<RawMessageDirection>,
+    dbg: String,
+}
 
 // Data stored for every T3z0s stream
 pub(crate) struct Conversation {
@@ -67,6 +81,7 @@ pub(crate) struct Conversation {
     public_key: Vec<u8>,
     incoming_decrypter: Option<EncryptedMessageDecoder>,
     outgoing_decrypter: Option<EncryptedMessageDecoder>,
+    frames: HashMap<ConversationKey, Result<ConversationItem, Error>>,
 }
 impl Conversation {
     pub fn new() -> Self {
@@ -82,6 +97,7 @@ impl Conversation {
             public_key: Default::default(),
             incoming_decrypter: None,
             outgoing_decrypter: None,
+            frames: HashMap::new(),
         }
     }
 
@@ -212,13 +228,12 @@ impl Conversation {
         }
     }
 
-    pub fn process_packet(
+    fn process_unvisited_packet(
         self: &mut Self,
         info: &T3zosDissectorInfo, pinfo: &packet_info,
         tvb: *mut tvbuff_t, proto_tree: *mut proto_tree,
         tcpd: *const tcp_analysis
-    ) -> Result<usize, Error> {
-
+    ) -> Result<ConversationItem, Error> {
         if !self.is_ok() { Err(NotT3z0sStreamError)?; }
 
         let counter = self.inc_counter();
@@ -226,21 +241,29 @@ impl Conversation {
         let mut dbg_srcaddr = None;
         let mut dbg_dstaddr = None;
         let payload = get_data_safe(tvb);
-        if counter < 1 {
-            assert!(false);
-        } else if counter <= 2 {
+        if counter <= 2 {
+            assert!(counter >= 1);
             let conn_msg = Conversation::process_connection_msg(payload.to_vec())?;
-            proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?};", conn_msg));
+           // proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?};", conn_msg));
 
             let ip_addr = IpAddr::try_from(pinfo.src)?;
             let sock_addr = SocketAddr::new(ip_addr, pinfo.srcport as u16);
             // FIXME: Can duplicate message happen? We use TCP stream, not raw packets stream.
-            self.conn_msgs.push((conn_msg, sock_addr));
+            self.conn_msgs.push((conn_msg.clone(), sock_addr));
             if self.conn_msgs.len() == 2 {
                 let configuration = get_configuration().ok_or(T3z0sNodeIdentityNotLoadedError)?;
                 self.upgrade(&configuration)?;
                 msg(format!("Upgraded peer! {}", self))
             }
+Ok(ConversationItem {
+    counter: counter,
+    srcaddr: None,
+    dstaddr: None,
+    conn_msg: Some(format!("{:?};", conn_msg)),
+    decrypted_msg: None,
+    direction: None,
+    dbg: format!("Self {}", self),
+})
         } else {
             let srcaddr = SocketAddr::new(IpAddr::try_from(pinfo.src)?, pinfo.srcport as u16);
             dbg_srcaddr = Some(srcaddr);
@@ -259,19 +282,59 @@ impl Conversation {
                 );
 
                 let decrypted_msg = self.process_encrypted_msg(&mut raw)?;
-                proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?};", decrypted_msg));
+                msg(format!("decrypted-msg: {:?}; src-addr:{:?}; dst-addr:{:?}; counter:{};", decrypted_msg, dbg_srcaddr, dbg_dstaddr, counter));
+                //proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?};", decrypted_msg));
+Ok(
+ConversationItem {
+    counter: counter,
+    srcaddr: dbg_srcaddr,
+    dstaddr: dbg_dstaddr,
+    conn_msg: None,
+    decrypted_msg: Some(format!("{:?};", decrypted_msg)),
+    direction: dbg_direction,
+    dbg: format!("Self {}", self),
+})
             } else {
-                Err(PeerNotUpgradedError)?;
+                Err(PeerNotUpgradedError)?
             }
         }
-        msg(format!("Conversation: {}; direction:{:?}; src-addr:{:?}; dst-addr:{:?};", self, dbg_direction, dbg_srcaddr, dbg_dstaddr));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("payload: {}; {:?};", payload.len(), payload));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter: {};", counter));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("direction:{:?};", dbg_direction));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("src-addr:{:?};", dbg_srcaddr));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dst-addr:{:?};", dbg_dstaddr));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("{};", self));
+    }
 
+    pub fn process_packet(
+        self: &mut Self,
+        info: &T3zosDissectorInfo, pinfo: &packet_info,
+        tvb: *mut tvbuff_t, proto_tree: *mut proto_tree,
+        tcpd: *const tcp_analysis
+    ) -> Result<usize, Error> {
+
+        let is_visited = get_ref(pinfo.fd).visited() != 0;
+        let frame_num = get_ref(pinfo.fd).num as u64;
+
+        if !is_visited {
+            let res = self.process_unvisited_packet(info, pinfo, tvb, proto_tree, tcpd);
+            self.frames.insert(frame_num, res);
+        }
+
+        let res_item = self.frames.get(&frame_num).unwrap();
+        let item = match res_item {
+            Err(ref e) => {
+                msg(format!("E: Cannot process packet: {}", e));
+                proto_tree_add_string_safe(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
+            },
+            Ok(item) => {
+                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("count:{:?}", item.counter));
+                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("direction:{:?}", item.direction));
+                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("srcaddr:{:?}", item.srcaddr));
+                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dstaddr:{:?}", item.dstaddr));
+                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dbg:{}", item.dbg));
+                proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?}", item.conn_msg));
+                proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?}", item.decrypted_msg));
+            }
+        };
+        //msg(format!("Conversation: {}; direction:{:?}; src-addr:{:?}; dst-addr:{:?};", self, dbg_direction, dbg_srcaddr, dbg_dstaddr));
+        //proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("payload: {}; {:?};", payload.len(), payload));
+
+        let payload = get_data_safe(tvb);
         Ok(payload.len())
     }
 
