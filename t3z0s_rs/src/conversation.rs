@@ -56,14 +56,10 @@ use crate::get_ref;
 type ConversationKey = u64;
 
 #[derive(Debug, Clone)]
-struct ConversationItem {
-    counter: u64,
-    srcaddr: Option<SocketAddr>,
-    dstaddr: Option<SocketAddr>,
-    conn_msg: Option<String>,
-    decrypted_msg: Option<String>,
-    direction: Option<RawMessageDirection>,
-    dbg: String,
+enum ConversationItem {
+    Nothing,
+    ConnMsg{counter: u64, msg: ConnectionMessage},
+    DecryptedMsg{counter: u64, msg: String},
 }
 
 // Data stored for every T3z0s stream
@@ -232,45 +228,35 @@ impl Conversation {
         self: &mut Self,
         info: &T3zosDissectorInfo, pinfo: &packet_info,
         tvb: *mut tvbuff_t, proto_tree: *mut proto_tree,
-        tcpd: *const tcp_analysis
+        tcpd: *const tcp_analysis,
+        srcaddr: &SocketAddr, dstaddr: &SocketAddr
     ) -> Result<ConversationItem, Error> {
         if !self.is_ok() { Err(NotT3z0sStreamError)?; }
 
         let counter = self.inc_counter();
         let mut dbg_direction = None;
-        let mut dbg_srcaddr = None;
-        let mut dbg_dstaddr = None;
         let payload = get_data_safe(tvb);
         if counter <= 2 {
             assert!(counter >= 1);
             let conn_msg = Conversation::process_connection_msg(payload.to_vec())?;
-           // proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?};", conn_msg));
 
             let ip_addr = IpAddr::try_from(pinfo.src)?;
             let sock_addr = SocketAddr::new(ip_addr, pinfo.srcport as u16);
-            // FIXME: Can duplicate message happen? We use TCP stream, not raw packets stream.
+            // NOTE: Duplicate message should not happen? We use TCP stream, not raw packets stream.
             self.conn_msgs.push((conn_msg.clone(), sock_addr));
             if self.conn_msgs.len() == 2 {
                 let configuration = get_configuration().ok_or(T3z0sNodeIdentityNotLoadedError)?;
                 self.upgrade(&configuration)?;
                 msg(format!("Upgraded peer! {}", self))
             }
-Ok(ConversationItem {
-    counter: counter,
-    srcaddr: None,
-    dstaddr: None,
-    conn_msg: Some(format!("{:?};", conn_msg)),
-    decrypted_msg: None,
-    direction: None,
-    dbg: format!("Self {}", self),
-})
+            Ok(ConversationItem::ConnMsg {
+                counter: counter,
+                msg: conn_msg,
+            })
         } else {
-            let srcaddr = SocketAddr::new(IpAddr::try_from(pinfo.src)?, pinfo.srcport as u16);
-            dbg_srcaddr = Some(srcaddr);
-            dbg_dstaddr = Some(SocketAddr::new(IpAddr::try_from(pinfo.dst)?, pinfo.destport as u16));
             if self.is_initialized {
                 msg(format!("local-addr:{}", self.local_addr()));
-                let direction = if self.local_addr() == srcaddr {
+                let direction = if self.local_addr() == *srcaddr {
                     RawMessageDirection::OUTGOING
                 } else {
                     RawMessageDirection::INCOMING
@@ -282,18 +268,13 @@ Ok(ConversationItem {
                 );
 
                 let decrypted_msg = self.process_encrypted_msg(&mut raw)?;
-                msg(format!("decrypted-msg: {:?}; src-addr:{:?}; dst-addr:{:?}; counter:{};", decrypted_msg, dbg_srcaddr, dbg_dstaddr, counter));
-                //proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?};", decrypted_msg));
-Ok(
-ConversationItem {
-    counter: counter,
-    srcaddr: dbg_srcaddr,
-    dstaddr: dbg_dstaddr,
-    conn_msg: None,
-    decrypted_msg: Some(format!("{:?};", decrypted_msg)),
-    direction: dbg_direction,
-    dbg: format!("Self {}", self),
-})
+                msg(format!("decrypted-msg: {:?}; src-addr:{:?}; dst-addr:{:?}; counter:{};", decrypted_msg, srcaddr, dstaddr, counter));
+                Ok(decrypted_msg.map_or(
+                    ConversationItem::Nothing,
+                    |m| ConversationItem::DecryptedMsg{
+                       counter: counter,
+                       msg: format!("{:?}", m)
+                    }))
             } else {
                 Err(PeerNotUpgradedError)?
             }
@@ -310,25 +291,34 @@ ConversationItem {
         let is_visited = get_ref(pinfo.fd).visited() != 0;
         let frame_num = get_ref(pinfo.fd).num as u64;
 
+        let srcaddr = SocketAddr::new(IpAddr::try_from(pinfo.src)?, pinfo.srcport as u16);
+        let dstaddr = SocketAddr::new(IpAddr::try_from(pinfo.dst)?, pinfo.destport as u16);
+
         if !is_visited {
-            let res = self.process_unvisited_packet(info, pinfo, tvb, proto_tree, tcpd);
+            let res = self.process_unvisited_packet(info, pinfo, tvb, proto_tree, tcpd, &srcaddr, &dstaddr);
             self.frames.insert(frame_num, res);
         }
+
+        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("srcaddr:{:?}", srcaddr));
+        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dstaddr:{:?}", dstaddr));
 
         let res_item = self.frames.get(&frame_num).unwrap();
         let item = match res_item {
             Err(ref e) => {
-                msg(format!("E: Cannot process packet: {}", e));
                 proto_tree_add_string_safe(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
             },
-            Ok(item) => {
-                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("count:{:?}", item.counter));
-                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("direction:{:?}", item.direction));
-                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("srcaddr:{:?}", item.srcaddr));
-                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dstaddr:{:?}", item.dstaddr));
-                proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dbg:{}", item.dbg));
-                proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?}", item.conn_msg));
-                proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?}", item.decrypted_msg));
+            Ok(ref item) =>  match item {
+                ConversationItem::Nothing => {
+                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("No message"));
+                },
+                ConversationItem::ConnMsg{counter, ref msg} => {
+                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
+                    proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?}", msg));
+                },
+                ConversationItem::DecryptedMsg{counter, ref msg} => {
+                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
+                    proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?}", msg));
+                }
             }
         };
         //msg(format!("Conversation: {}; direction:{:?}; src-addr:{:?}; dst-addr:{:?};", self, dbg_direction, dbg_srcaddr, dbg_dstaddr));

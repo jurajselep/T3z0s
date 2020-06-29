@@ -10,6 +10,4 @@ pub struct T3zosDissectorInfo {
     pub hf_error: c_int,
 
     pub hf_debug: c_int,
-    pub hf_phrase: c_int,
-    pub hf_word: c_int
 }

@@ -81,10 +81,6 @@ pub extern "C" fn t3z03s_dissect_packet(
 
     let conv = Conversation::get_or_create(tcpd);
 
-    unsafe {
-        msg(format!("packet: visited:{:?}; frame-num:{:?}", (*pinfo.fd).visited(), (*pinfo.fd).num));
-    }
-
     match conv.process_packet(info, pinfo, tvb, proto_tree, tcpd) {
         Err(e) => {
             msg(format!("E: Cannot process packet: {}", e));
