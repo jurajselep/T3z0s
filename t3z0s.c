@@ -24,8 +24,6 @@ struct T3zosDissectorInfo {
     int hf_error;
 
     int hf_debug;
-    int hf_phrase;
-    int hf_word;
 };
 
 extern int t3z03s_dissect_packet(struct T3zosDissectorInfo*, tvbuff_t*, proto_tree*, const packet_info*, const struct tcp_analysis*);
@@ -38,7 +36,7 @@ static dissector_handle_t t3z0s_handle;
 static int proto_t3z0s = -1;
 static struct T3zosDissectorInfo info = {
     -1, -1, -1, -1, -1,
-    -1, -1, -1,
+    -1,
 };
 static gint ett_t3z0s = -1; // Subtree
 
@@ -144,16 +142,6 @@ proto_register_t3z0s(void)
         },
         { &info.hf_debug,
             { "T3z0s Debug", "t3z0s.debug",
-            FT_STRING, BASE_NONE,
-            NULL, 0x0, NULL, HFILL }
-        },
-        { &info.hf_debug,
-            { "T3z0s Phrase", "t3z0s.phrase",
-            FT_STRING, BASE_NONE,
-            NULL, 0x0, NULL, HFILL }
-        },
-        { &info.hf_word,
-            { "T3z0s Word", "t3z0s.word",
             FT_STRING, BASE_NONE,
             NULL, 0x0, NULL, HFILL }
         },
