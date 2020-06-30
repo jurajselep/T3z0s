@@ -48,11 +48,11 @@ static gboolean wmem_cb(wmem_allocator_t* allocator, wmem_cb_event_t ev, void *d
             t3z03s_free_conv_data(data);
             break;
         case WMEM_CB_DESTROY_EVENT:
-            MSG("destroy: %p\n", allocator);
+            //MSG("destroy: %p\n", allocator);
             break;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static const char* identity_json_filepath;
