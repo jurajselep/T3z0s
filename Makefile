@@ -5,10 +5,6 @@ WIRESHARK_PATH:=${MK_PATH}/wireshark
 ############################################################
 # Preparation steps, must be called as root :-(
 
-.PHONY: root-symlink-of-lib
-root-symlink-of-lib:
-	cd /usr/lib && ln -fs "${T3Z0S_PATH}/t3z0s_rs/target/debug/libt3z0s_rs.a" .
-
 .PHONY: clone-wireshark
 clone-wireshark:
 	if [ ! -d "${WIRESHARK_PATH}" ]; then git clone https://github.com/wireshark/wireshark.git "${WIRESHARK_PATH}" && cd "${WIRESHARK_PATH}" && git checkout b99a0c95d8c3fec834da0b7be27b2fc385054646; fi
@@ -27,7 +23,7 @@ call-bindgen:
 	cd "${WIRESHARK_PATH}" && rm -fv "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" && bindgen "epan/packet.h" -o "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" -- -I. $(shell pkg-config --cflags glib-2.0)
 
 .PHONY: prepare
-prepare: clone-wireshark patch-wireshark symlink-for-wireshark call-bindgen root-symlink-of-lib
+prepare: clone-wireshark patch-wireshark symlink-for-wireshark call-bindgen
 
 ############################################################
 # Main part, building
@@ -36,8 +32,12 @@ prepare: clone-wireshark patch-wireshark symlink-for-wireshark call-bindgen root
 build-t3z0s: call-bindgen
 	cd "${T3Z0S_PATH}/t3z0s_rs" && cargo build
 
+.PHONY: symlink-of-lib
+symlink-of-lib:
+	mkdir -p "${WIRESHARK_PATH}/build/run" && cd "${WIRESHARK_PATH}/build/run" && ln -fs "${T3Z0S_PATH}/t3z0s_rs/target/debug/libt3z0s_rs.a" .
+
 .PHONY: build-wireshark
-build-wireshark:
+build-wireshark: symlink-of-lib
 	cd "${WIRESHARK_PATH}" && mkdir -p build && cd build && cmake .. && make
 
 .PHONY: build
