@@ -41,6 +41,7 @@ add_plugin_library(t3z0s epan)
 
 target_link_libraries(t3z0s epan)
 target_link_libraries(t3z0s t3z0s_rs)
+target_link_libraries(t3z0s sodium)
 
 install_plugin(t3z0s epan)
 
