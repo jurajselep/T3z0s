@@ -3,24 +3,10 @@ Ubuntu 20.04 Build
 
               # apt update
               # apt install build-essential git cmake libglib2.0-dev libgcrypt-dev libc-ares-dev libpcap-dev bison flex  qttools5-dev qtmultimedia5-dev
-              $ bindgen /path/to/wireshark/epan/packet.h -o /path/to/tezos/dissector/t3z0s/t3z0s_rs/src/wireshark/packet.rs -- -I. `pkg-config --cflags glib-2.0`
-              $ cd /path/to/tezos/dissector/t3z0s/t3z0s_rs &&
-                cargo clean && cargo build &&
-                cp -v target/debug/libt3z0s_rs.a /usr/lib/
-                && cd -
-              $ git clone https://github.com/wireshark/wireshark.git
-              $ cd wireshark/plugins/epan &&
-                ln -s /path/to/tezos/dissector/t3z0s . &&
-                cd -
-              $ mkdir build && cd build
-              $ cd /path/to/wireshark && patch -p1 </path/to/tezos/dissector/t3z0s/wireshark.diff && cd -
-        build $ cmake ../wireshark
-        build $ make
-              # mkdir /usr/local/lib/wireshark/plugins/3.3 &&
-                cd /usr/local/lib/wireshark/plugins/3.3 &&
-                ln -s /path/to/wireshark/build/run/plugins/3.3/epan . &&
-                cd -
-        build $ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libsodium.so run/tshark
+              $ make prepare
+              $ make build
+
+              You can find `tshark` and `wireshark` in `wireshakr/build` directory.
 
 Verify that plugin is installed
 -------------------------------
@@ -35,14 +21,14 @@ Simple Session
 
 - Terminal 1:
 
-               $ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libsodium.so run/tshark -r /tmp/xyz.pcap
+               $ run/tshark -r /tmp/xyz.pcap
                    1 0.000000000    127.0.0.1 ? 127.0.0.1    t3z0s 58
                    ...
                    3 1.147193109    127.0.0.1 ? 127.0.0.1    t3z0s 58
                    ...
                    5 1.842787799    127.0.0.1 ? 127.0.0.1    t3z0s 58
 
-                $ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libsodium.so run/tshark -Vr /tmp/xyz.pcap
+                $ run/tshark -Vr /tmp/xyz.pcap
                    ...
                 Internet Control Message Protocol
                     Type: 3 (Destination unreachable)
