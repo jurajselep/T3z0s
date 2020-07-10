@@ -44,13 +44,14 @@ static gboolean wmem_cb(wmem_allocator_t* allocator, wmem_cb_event_t ev, void *d
 {
     switch (ev) {
         case WMEM_CB_FREE_EVENT:
-            MSG("Freeing memory allocator: %p %p\n", allocator, data);
-            t3z03s_free_conv_data(data);
             break;
         case WMEM_CB_DESTROY_EVENT:
-            //MSG("destroy: %p\n", allocator);
+            DISSECTOR_ASSERT_NOT_REACHED();
             break;
     }
+
+    MSG("Freeing memory allocator: %p %p\n", allocator, data);
+    t3z03s_free_conv_data(data);
 
     return FALSE;
 }
