@@ -1,3 +1,5 @@
+SHELL:=/bin/bash
+
 MK_PATH:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 T3Z0S_PATH:=${MK_PATH}
 WIRESHARK_PATH:=${MK_PATH}/wireshark
@@ -64,3 +66,16 @@ clean: clean-t3z0s
 .PHONY: mrproper
 mrproper: clean
 	rm -vfr "${WIRESHARK_PATH}/build"
+
+############################################################
+# tests
+
+.PHONY: prepare-for-test
+prepare-for-test:
+	if [ ! -d  tezedge-debugger ]; then git clone https://github.com/simplestaking/tezedge-debugger.git && cd tezedge-debugger && git checkout 4e243db576e2c561892c7f34d4fe858f63ef4ad8; fi 
+	cd tezedge-debugger && cargo install --bins --path . --root .
+
+.PHONY: test
+test:
+	tests/tools/tshark-over-pcap.sh
+	tests/tools/srv-cli-tshark.sh
