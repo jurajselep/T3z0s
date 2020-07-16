@@ -75,7 +75,13 @@ prepare-for-test:
 	if [ ! -d  tezedge-debugger ]; then git clone https://github.com/simplestaking/tezedge-debugger.git && cd tezedge-debugger && git checkout 4e243db576e2c561892c7f34d4fe858f63ef4ad8; fi 
 	cd tezedge-debugger && cargo install --bins --path . --root .
 
-.PHONY: test
-test:
+.PHONY: test-tshark-over-pcap
+test-tshark-over-pcap:
 	tests/tools/tshark-over-pcap.sh
+
+.PHONY: test-srv-cli-tshark
+test-srv-cli-tshark:
 	tests/tools/srv-cli-tshark.sh
+
+.PHONY: test
+test: test-tshark-over-pcap test-srv-cli-tshark
