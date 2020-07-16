@@ -172,7 +172,6 @@ impl Conversation {
             configuration.identity.secret_key));
         let is_incoming = first_pk != configuration.identity.public_key;
         msg(format!("upgrade pks cmp: {} != {}", first_pk, configuration.identity.public_key));
-        // FIXME: Kyras: Otocil jsem to, zda se mi, ze takto je spravne, v Debugerru je to naopak.
         let (received, sent) = if is_incoming {
             (first, second)
         } else {
@@ -234,7 +233,6 @@ impl Conversation {
         if !self.is_ok() { Err(NotT3z0sStreamError)?; }
 
         let counter = self.inc_counter();
-        let mut dbg_direction = None;
         let payload = get_data_safe(tvb);
         if counter <= 2 {
             assert!(counter >= 1);
@@ -261,7 +259,6 @@ impl Conversation {
                 } else {
                     RawMessageDirection::INCOMING
                 };
-                dbg_direction = Some(direction);
 
                 let mut raw = RawPacketMessage::new(
                     direction, payload
@@ -321,8 +318,6 @@ impl Conversation {
                 }
             }
         };
-        //msg(format!("Conversation: {}; direction:{:?}; src-addr:{:?}; dst-addr:{:?};", self, dbg_direction, dbg_srcaddr, dbg_dstaddr));
-        //proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("payload: {}; {:?};", payload.len(), payload));
 
         let payload = get_data_safe(tvb);
         Ok(payload.len())
