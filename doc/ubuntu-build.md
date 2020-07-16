@@ -2,7 +2,7 @@ Ubuntu 20.04 Build
 ==================
 
               # apt update
-              # apt install build-essential git cmake libglib2.0-dev libgcrypt-dev libc-ares-dev libpcap-dev bison flex  qttools5-dev qtmultimedia5-dev
+              # apt install build-essential git cmake clang libssl-dev libglib2.0-dev libgcrypt-dev libc-ares-dev libpcap-dev bison flex qt5-default qtmultimedia5-dev
               $ make prepare
               $ make build
 
