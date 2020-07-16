@@ -95,7 +95,9 @@ impl EncryptedMessageDecoder {
         logger::msg(format!("try_decrypt: len: {}", len));
         if self.inc_buf[2..].len() >= len {
             let chunk = match BinaryChunk::try_from(self.inc_buf[0..len + 2].to_vec()) {
-                Ok(chunk) => chunk,
+                Ok(chunk) => {
+                    chunk
+                }
                 Err(e) => {
                     logger::msg(format!("Failed to load binary chunk: {}", e));
                     return None;
@@ -103,8 +105,9 @@ impl EncryptedMessageDecoder {
             };
 
             self.inc_buf.drain(0..len + 2);
-            match decrypt(chunk.content(), &self.nonce_fetch_increment(), &self.precomputed_key) {
+            match decrypt(chunk.content(), &self.nonce_fetch(), &self.precomputed_key) {
                 Ok(msg) => {
+                    self.nonce_increment();
                     self.try_deserialize(msg)
                 }
                 Err(e) => {
@@ -199,10 +202,21 @@ impl EncryptedMessageDecoder {
     }
 
     #[inline]
+    #[allow(dead_code)]
     /// Increment internal nonce after decrypting message
     fn nonce_fetch_increment(&mut self) -> Nonce {
         let incremented = self.remote_nonce.increment();
         std::mem::replace(&mut self.remote_nonce, incremented)
+    }
+
+    #[inline]
+    fn nonce_fetch(&self) -> Nonce {
+        self.remote_nonce.clone()
+    }
+
+    #[inline]
+    fn nonce_increment(&mut self) {
+        self.remote_nonce = self.remote_nonce.increment();
     }
 
     /// Store decrypted message
