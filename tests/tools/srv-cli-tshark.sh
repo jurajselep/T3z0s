@@ -32,8 +32,8 @@ DRONE_SERVER_BIN=$(realpath 'tezedge-debugger/bin/drone-server')
 DRONE_CLIENT_BIN=$(realpath 'tezedge-debugger/bin/drone-client')
 TSHARK_BIN=$(realpath 'wireshark/build/run/tshark')
 
-T3Z0S_IDENTITY_FILE_SRV=$(realpath tests/configs/identity-srv.json)
-T3Z0S_IDENTITY_FILE_CLI=$(realpath tests/configs/identity-cli.json)
+T3Z0S_IDENTITY_FILE_SRV=$(realpath tests/configs/identity-server.json)
+T3Z0S_IDENTITY_FILE_CLI=$(realpath tests/configs/identity-client.json)
 
 function cleanup {
     counter=0
