@@ -22,7 +22,9 @@ symlink-for-wireshark:
 .PHONY: call-bindgen
 call-bindgen:
 	cargo install bindgen
-	cd "${WIRESHARK_PATH}" && rm -fv "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" && bindgen "epan/packet.h" -o "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" -- -I. $(shell pkg-config --cflags glib-2.0)
+	rustup component add rustfmt
+	cd "${WIRESHARK_PATH}" && rm -fv "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" && bindgen --no-rustfmt-bindings "epan/packet.h" -o "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" -- -I. $(shell pkg-config --cflags glib-2.0)
+	cd "${WIRESHARK_PATH}" && rustfmt "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs"
 
 .PHONY: prepare
 prepare: clone-wireshark patch-wireshark symlink-for-wireshark call-bindgen
