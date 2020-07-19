@@ -115,6 +115,18 @@ function start_tshark {
         counter=$((counter+1))
         sleep .1
     done
+
+    # tshark needs some time to load modules
+    local counter=0
+    local prev_md5=invalidmd5
+    while [ "$counter" -lt 100 ]; do
+        local md5=$(cat "/proc/$pid/maps" | awk '{print$6}' | md5sum | awk '{print$1}')
+        [ "$md5" == "$prev_md5" ] && grep >/dev/null 't3z0s[.]so' "/proc/$pid/maps" && break
+        prev_md5="$md5"
+        counter=$((counter+1))
+        sleep .1
+    done
+
     ret="$pid"
     return 0
 }
