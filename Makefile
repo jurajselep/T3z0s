@@ -58,7 +58,7 @@ install: build
 
 .PHONY: clean-t3z0s
 clean-t3z0s:
-	rm -fv "$WIRESHARK_PATH}/run/plugins/3.3/epan/t3z0s.so"
+	rm -fv "${WIRESHARK_PATH}/run/plugins/3.3/epan/t3z0s.so"
 
 .PHONY: clean
 clean: clean-t3z0s
