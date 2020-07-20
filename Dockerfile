@@ -1,7 +1,26 @@
-FROM kyras/tezedge_base:latest as builder
+#FROM kyras/tezedge_base:latest as builder
+#WORKDIR /home/appuser/
+#COPY . .
+#RUN apt update && apt install -y \
+#    bison \
+#    build-essential \
+#    clang \
+#    cmake \
+#    flex \
+#    git \
+#    libc-ares-dev \
+#    libgcrypt-dev \
+#    libglib2.0-dev \
+#    libpcap-dev \
+#    libssl-dev \
+#    qtmultimedia5-dev \
+#    qttools5-dev \
+#    && make prepare && make build && make prepare-for-test
+
+FROM meavelabs/t3z0s:rust as builder
 WORKDIR /home/appuser/
 COPY . .
-RUN apt update && apt install -y \
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
     bison \
     build-essential \
     clang \
@@ -14,8 +33,15 @@ RUN apt update && apt install -y \
     libpcap-dev \
     libssl-dev \
     qtmultimedia5-dev \
-    qttools5-dev \
-    && make prepare && make build && make prepare-for-test
+    qttools5-dev
+RUN chown -R appuser:appuser .
+USER appuser
+RUN [ "/bin/bash" , "-c" , "source $HOME/.cargo/env && \
+    rustup install nightly && \
+    rustup default nightly && \
+    make prepare && \
+    make prepare-for-test && \
+    make build" ]
 
 #FROM ubuntu:latest
 #WORKDIR /home/appuser/
