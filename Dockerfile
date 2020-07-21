@@ -42,6 +42,8 @@ RUN [ "/bin/bash" , "-c" , "source $HOME/.cargo/env && \
     make prepare && \
     make prepare-for-test && \
     make build" ]
+USER root
+RUN make sbit-for-dumpcat
 
 #FROM ubuntu:latest
 #WORKDIR /home/appuser/
