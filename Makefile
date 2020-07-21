@@ -47,6 +47,10 @@ build-wireshark: symlink-of-lib
 .PHONY: build
 build: build-t3z0s build-wireshark
 
+.PHONY: sbit-for-dumpcat
+sbit-for-dumpcat:
+	chmod u+s ./wireshark/build/run/dumpcap
+
 ############################################################
 # installing
 
