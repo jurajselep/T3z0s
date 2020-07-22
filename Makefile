@@ -3,13 +3,19 @@ SHELL:=/bin/bash
 MK_PATH:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 T3Z0S_PATH:=${MK_PATH}
 WIRESHARK_PATH:=${MK_PATH}/wireshark
+WIRESHARK_OPT_PATH:=${MK_PATH}/opt
+WIRESHARK_BIN_PATH:=${WIRESHARK_OPT_PATH}/bin
 
 ############################################################
 # Preparation steps, must be called as root :-(
 
 .PHONY: clone-wireshark
 clone-wireshark:
-	if [ ! -d "${WIRESHARK_PATH}" ]; then git clone https://github.com/wireshark/wireshark.git "${WIRESHARK_PATH}" && cd "${WIRESHARK_PATH}" && git checkout b99a0c95d8c3fec834da0b7be27b2fc385054646; fi
+	if [ ! -d "${WIRESHARK_PATH}" ]; then \
+		git clone https://github.com/wireshark/wireshark.git "${WIRESHARK_PATH}" && \
+		cd "${WIRESHARK_PATH}" && \
+		git checkout b99a0c95d8c3fec834da0b7be27b2fc385054646; \
+	fi
 
 .PHONY: patch-wireshark
 patch-wireshark:
@@ -42,20 +48,21 @@ symlink-of-lib:
 
 .PHONY: build-wireshark
 build-wireshark: symlink-of-lib
-	cd "${WIRESHARK_PATH}" && mkdir -p build && cd build && cmake .. && make
+	cd "${WIRESHARK_PATH}" && mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX="${WIRESHARK_OPT_PATH}" && make
 
 .PHONY: build
 build: build-t3z0s build-wireshark
-
-.PHONY: sbit-for-dumpcat
-sbit-for-dumpcat:
-	cd ${WIRESHARK_PATH} && chown root.root build/run/dumpcap && chmod u+s build/run/dumpcap
 
 ############################################################
 # installing
 
 .PHONY: install
 install: build
+	cd "${WIRESHARK_PATH}" && cd build && make install
+
+.PHONY: sbit-for-dumpcat
+sbit-for-dumpcat:
+	cd "${WIRESHARK_BIN_PATH}" && chown root.root dumpcap && chmod u+s dumpcap
 
 ############################################################
 # cleaning
@@ -76,9 +83,16 @@ mrproper: clean
 ############################################################
 # tests
 
+.PHONY: clone-tezedge-debugger
+clone-tezedge-debugger:
+	if [ ! -d  tezedge-debugger ]; then \
+		git clone https://github.com/simplestaking/tezedge-debugger.git && \
+		cd tezedge-debugger && \
+		git checkout 8209f6b834ee89bb0f9ed35d2da61d66f4b593ea; \
+	fi
+
 .PHONY: prepare-for-test
-prepare-for-test:
-	if [ ! -d  tezedge-debugger ]; then git clone https://github.com/simplestaking/tezedge-debugger.git && cd tezedge-debugger && git checkout 4e243db576e2c561892c7f34d4fe858f63ef4ad8; fi 
+prepare-for-test: clone-tezedge-debugger
 	cd tezedge-debugger && cargo install --bins --path . --root .
 
 .PHONY: test-tshark-over-pcap
@@ -91,3 +105,9 @@ test-srv-cli-tshark:
 
 .PHONY: test
 test: test-tshark-over-pcap test-srv-cli-tshark
+
+############################################################
+# docker-images
+.PHONY: test-docker-image
+test-docker-image: clone-wireshark clone-tezedge-debugger
+	docker build . -t t3z0s/test
