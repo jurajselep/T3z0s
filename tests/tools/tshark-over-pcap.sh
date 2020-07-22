@@ -17,7 +17,7 @@ T3Z0S_IDENTITY_FILE=$(realpath tests/configs/identity.json)
 
 PATH_PCAP=$(realpath "tests/data/cap-09.pcap")
 
-TSHARK_BIN=$(realpath 'wireshark/build/run/tshark')
+TSHARK_BIN=$(realpath 'opt/bin/tshark')
 
 function run_tshark {
     "$TSHARK_BIN" -o \
