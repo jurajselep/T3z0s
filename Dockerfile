@@ -38,9 +38,9 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
     pkg-config \
     qtmultimedia5-dev \
     qttools5-dev
-RUN [ "/bin/chown", "-R", "appuser:appuser", "/home/appuser" ]
+RUN [ "/bin/chown", "-R", "appuser:appuser", "." ]
 USER appuser
-RUN [ "/bin/bash" , "-c" , "env && pwd && cd /home/appuser && source .cargo/env && \
+RUN [ "/bin/bash" , "-c" , "source .cargo/env && \
     rustup install nightly && \
     rustup default nightly && \
     make prepare && \
