@@ -49,7 +49,7 @@ build: build-t3z0s build-wireshark
 
 .PHONY: sbit-for-dumpcat
 sbit-for-dumpcat:
-	chmod u+s ./wireshark/build/run/dumpcap
+	cd ${WIRESHARK_PATH} && chown root.root build/run/dumpcap && chmod u+s build/run/dumpcap
 
 ############################################################
 # installing
