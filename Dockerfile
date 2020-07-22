@@ -45,7 +45,7 @@ RUN [ "/bin/bash" , "-c" , "source .cargo/env && \
     rustup default nightly && \
     make prepare && \
     make prepare-for-test && \
-    make build" ]
+    make install" ]
 USER root
 RUN make sbit-for-dumpcat
 
