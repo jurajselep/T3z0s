@@ -106,6 +106,39 @@ test-srv-cli-tshark:
 .PHONY: test
 test: test-tshark-over-pcap test-srv-cli-tshark
 
+
+.bin/carthagenet.sh:
+	mkdir -p .bin
+	wget -O .bin/carthagenet.sh https://gitlab.com/tezos/tezos/raw/latest-release/scripts/tezos-docker-manager.sh
+	chmod u+x .bin/carthagenet.sh
+
+.PHONY: check-docker-test-image
+check-docker-test-image:
+	if ! grep 't3z0s[/]test:latest' <(docker images --format '{{.Repository}}:{{.Tag}}'); then \
+		${MAKE} test-docker-image; \
+	fi
+
+
+.PHONY: test-tshark-with-carthagenet
+test-tshark-with-carthagenet: .bin/carthagenet.sh check-docker-test-image
+	docker rm -f test_tshark_with_carthagenet || true
+	.bin/carthagenet.sh stop || true
+
+	.bin/carthagenet.sh start
+	mkdir -p .tmp
+	while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp; do sleep 1; done
+	while ! docker cp .tmp/identity.json test_tshark_with_carthagenet:/tmp; do sleep 1; done &
+
+	docker run \
+		--name test_tshark_with_carthagenet \
+		-u appuser \
+		--network container:carthagenet_node_1 \
+		t3z0s/test:latest \
+		/home/appuser/tests/tools/listen-to-tezos-node.sh
+
+	.bin/carthagenet.sh stop
+
+
 ############################################################
 # docker-images
 .PHONY: test-docker-image
