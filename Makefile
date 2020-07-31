@@ -83,28 +83,12 @@ mrproper: clean
 ############################################################
 # tests
 
-.PHONY: clone-tezedge-debugger
-clone-tezedge-debugger:
-	if [ ! -d  tezedge-debugger ]; then \
-		git clone https://github.com/simplestaking/tezedge-debugger.git && \
-		cd tezedge-debugger && \
-		git checkout 8209f6b834ee89bb0f9ed35d2da61d66f4b593ea; \
-	fi
-
-.PHONY: prepare-for-test
-prepare-for-test: clone-tezedge-debugger
-	cd tezedge-debugger && cargo install --bins --path . --root .
-
 .PHONY: test-tshark-over-pcap
 test-tshark-over-pcap:
 	tests/tools/tshark-over-pcap.sh
 
-.PHONY: test-srv-cli-tshark
-test-srv-cli-tshark:
-	tests/tools/srv-cli-tshark.sh
-
 .PHONY: test
-test: test-tshark-over-pcap test-srv-cli-tshark
+test: test-tshark-over-pcap
 
 
 .bin/carthagenet.sh:
@@ -122,21 +106,35 @@ check-docker-test-image:
 .PHONY: test-tshark-with-carthagenet
 test-tshark-with-carthagenet: .bin/carthagenet.sh check-docker-test-image
 	docker rm -f test_tshark_with_carthagenet || true
-	.bin/carthagenet.sh stop || true
+	.bin/carthagenet.sh stop || true 
+	rm -vfr .tmp
+	docker network rm tshark_test_net || true
 
-	.bin/carthagenet.sh start
-	mkdir -p .tmp
-	while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp; do sleep 1; done
-	while ! docker cp .tmp/identity.json test_tshark_with_carthagenet:/tmp; do sleep 1; done &
+	docker network create tshark_test_net
+	COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh start \
+	mkdir -p .tmp && while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp; do sleep 1; done
+	docker kill carthagenet_node_1
 
+	( \
+		while ! docker cp .tmp/identity.json test_tshark_with_carthagenet:/tmp; do \
+			sleep 1; \
+		done && \
+		sleep 30 && \
+		COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh start \
+		sleep 180 && \
+		docker network disconnect tshark_test_net carthagenet_node_1 \
+	) &
 	docker run \
 		--name test_tshark_with_carthagenet \
 		-u appuser \
-		--network container:carthagenet_node_1 \
+		\
 		t3z0s/test:latest \
 		/home/appuser/tests/tools/listen-to-tezos-node.sh
 
-	.bin/carthagenet.sh stop
+	while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp/identity.2.json; do sleep 1; done
+	[ "$(md5sum <.tmp/identity.json)" = "$(md5sum <.tmp/identity.2.json)" ]
+
+	COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh stop
 
 
 ############################################################
@@ -144,3 +142,7 @@ test-tshark-with-carthagenet: .bin/carthagenet.sh check-docker-test-image
 .PHONY: test-docker-image
 test-docker-image: clone-wireshark clone-tezedge-debugger
 	docker build . -t t3z0s/test
+
+.PHONY: tezos-docker-image
+tezos-docker-image:
+	docker build tests/tshark-with-ocaml-node -t t3z0s/tezos:v7.3
