@@ -1,33 +1,35 @@
-version: "2"
+version: "3"
 
 volumes:
   node_data:
   client_data:
+  tmp:
 
 services:
   tshark:
+    user: root
     image: t3z0s/test:latest
     hostname: tshark
-    command: /home/appuser/tests/tshark_with_ocaml_node/bin/listen-to-tezos-node.sh
-    tmpfs:
-      - /tmp
+    command: /home/appuser/tests/tshark-with-ocaml-node/bin/listen-to-tezos-node.sh
     volumes:
       - node_data:/var/run/tezos/node
       - client_data:/var/run/tezos/client
-    restart: on-failure
+      - tmp:/tmp
+    restart: "no"
   tezos_node:
+    user: root
     image: t3z0s/tezos:v7.3
     depends_on:
       - tshark
-    hostname: node
-    entrypoint: /usr/local/T3z0s/tests/tshark_with_ocaml_node/bin/start-tezos-node.sh
-    ports:
-      - "19732:19732"
-    expose:
-      - "8732"
-    tmpfs:
-      - /tmp
+    network_mode: "service:tshark"
+#    hostname: node
+    entrypoint: /usr/local/T3z0s/bin/start-tezos-node.sh
+#    ports:
+#      - "19732:19732"
+#    expose:
+#      - "8732"
     volumes:
       - node_data:/var/run/tezos/node
       - client_data:/var/run/tezos/client
-    restart: on-failure
+      - tmp:/tmp
+    restart: "no"

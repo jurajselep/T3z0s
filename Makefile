@@ -104,38 +104,11 @@ check-docker-test-image:
 
 
 .PHONY: test-tshark-with-carthagenet
-test-tshark-with-carthagenet: .bin/carthagenet.sh check-docker-test-image
-	docker rm -f test_tshark_with_carthagenet || true
-	.bin/carthagenet.sh stop || true 
-	rm -vfr .tmp
-	docker network rm tshark_test_net || true
-
-	docker network create tshark_test_net
-	COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh start \
-	mkdir -p .tmp && while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp; do sleep 1; done
-	docker kill carthagenet_node_1
-
-	( \
-		while ! docker cp .tmp/identity.json test_tshark_with_carthagenet:/tmp; do \
-			sleep 1; \
-		done && \
-		sleep 30 && \
-		COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh start \
-		sleep 180 && \
-		docker network disconnect tshark_test_net carthagenet_node_1 \
-	) &
-	docker run \
-		--name test_tshark_with_carthagenet \
-		-u appuser \
-		\
-		t3z0s/test:latest \
-		/home/appuser/tests/tools/listen-to-tezos-node.sh
-
-	while ! docker cp carthagenet_node_1:/var/run/tezos/node/data/identity.json .tmp/identity.2.json; do sleep 1; done
-	[ "$(md5sum <.tmp/identity.json)" = "$(md5sum <.tmp/identity.2.json)" ]
-
-	COMPOSE_PROJECT_NAME=tshark_test_net .bin/carthagenet.sh stop
-
+test-tshark-with-carthagenet:
+	#cd tests/tshark-with-ocaml-node && docker-compose --verbose up
+	cd tests/tshark-with-ocaml-node && docker-compose rm --force
+	cd tests/tshark-with-ocaml-node && docker-compose up
+	# docker-compose down
 
 ############################################################
 # docker-images
