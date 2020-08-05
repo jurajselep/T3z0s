@@ -106,14 +106,14 @@ check-docker-test-image:
 .PHONY: test-tshark-with-carthagenet
 test-tshark-with-carthagenet:
 	#cd tests/tshark-with-ocaml-node && docker-compose --verbose up
-	cd tests/tshark-with-ocaml-node && docker-compose rm --force
+	cd tests/tshark-with-ocaml-node && docker-compose rm --force || true
 	cd tests/tshark-with-ocaml-node && docker-compose up
 	# docker-compose down
 
 ############################################################
 # docker-images
 .PHONY: test-docker-image
-test-docker-image: clone-wireshark clone-tezedge-debugger
+test-docker-image: clone-wireshark
 	docker build . -t t3z0s/test
 
 .PHONY: tezos-docker-image
