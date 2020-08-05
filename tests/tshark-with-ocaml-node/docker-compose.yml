@@ -22,6 +22,7 @@ services:
     depends_on:
       - tshark
     network_mode: "service:tshark"
+    privileged: true
 #    hostname: node
     entrypoint: /usr/local/T3z0s/bin/start-tezos-node.sh
 #    ports:
