@@ -1,0 +1,13 @@
+[package]
+name = "cmp-json-and-tshark"
+version = "0.1.0"
+authors = ["Daniel R. Fiala <freelancer@meave.biz>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = "1.0"
+failure = "0.1"
+regex = "1"
