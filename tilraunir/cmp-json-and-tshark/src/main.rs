@@ -1,10 +1,12 @@
 extern crate regex;
 
+use std::net::SocketAddr::V6;
+use std::net::SocketAddr::V4;
 use serde_json::{Value};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV6};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::option::Option;
 use std::path::Path;
 use regex::Regex;
@@ -24,6 +26,19 @@ struct ConnectionMsg {
     msg: String,
     src_addr: SocketAddr,
     dst_addr: SocketAddr,
+}
+
+fn unify_addr(addr: SocketAddr) -> SocketAddr {
+    match addr {
+        V4(a) => V4(a),
+        V6(a) => {
+            if let Some(a4) = a.ip().to_ipv4() {
+                V4(SocketAddrV4::new(a4, a.port()))
+            } else {
+                V6(a)
+            }
+        }
+    }
 }
 
 fn parse_json(file_path: &str) -> Result<Value, Error> {
@@ -52,7 +67,7 @@ fn process_connections(file_path: &str) -> Result<HashMap<String, ConnectionFrom
                 //println!("\tpeer_id:{:?}; addr:{:?}; port:{:?}; chain_name:{:?}", peer_id, addr, port, chain_name);
                 Some(ConnectionFromRpc{
                     peer_id,
-                    addr: SocketAddr::new(addr, port),
+                    addr: unify_addr(SocketAddr::new(addr, port)),
                 })
             }();
             if let Some(conn) = conn_opt {
@@ -87,7 +102,7 @@ fn process_peers(file_path: &str,
                 let msg_from_rpc = conns_from_rpc.get(&peer_id).unwrap();
                 let item = conn_msgs.iter().find(|msg| msg.src_addr == msg_from_rpc.addr || msg.dst_addr == msg_from_rpc.addr);
                 if item.is_none() {
-                    eprintln!("Cannot find connection for peer_id:{} :-(", peer_id);
+                    eprintln!("Cannot find connection for peer_id:{}, addr:{} :-(", peer_id, msg_from_rpc.addr);
                 } else {
                     eprintln!("Found connection for peer_id:{} :-)", peer_id);
                 }
@@ -130,8 +145,8 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
                 conn_msgs.push(ConnectionMsg {
                     conversation: conversation,
                     msg: msg,
-                    src_addr: src_addr.Into::<SocketAddrV6>(),
-                    dst_addr,
+                    src_addr: unify_addr(src_addr),
+                    dst_addr: unify_addr(dst_addr),
                 });
             }
 
@@ -157,7 +172,7 @@ fn main() {
     let err = || -> Result<(), Error> {
         let conn_msgs = parse_tshark("data/tshark.out")?;
         let conns_from_rpc = process_connections("data/connections.json")?;
-        process_peers("data/peer.json"), &conns_from_rpc, &conn_msgs)?;
+        process_peers("data/peers.json", &conns_from_rpc, &conn_msgs)?;
 
         Ok(())
     }();
