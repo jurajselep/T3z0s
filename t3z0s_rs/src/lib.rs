@@ -26,9 +26,6 @@ use tezos_messages::p2p::{
 };
 use std::fmt;
 
-// TODO: DRF: Move ConnectionMessage from tezedge-debugger to some library or turn tezedge-debugger to a mod?
-//mod connection_message;
-//use connection_message::ConnectionMessage;
 mod network;
 use network::{
     connection_message::ConnectionMessage,
