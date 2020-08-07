@@ -1,5 +1,10 @@
 extern crate regex;
 
+mod errors;
+use errors::{
+    CannotFindMessagesError
+};
+
 use failure::Error;
 use regex::Regex;
 use serde_json::Value;
@@ -117,6 +122,8 @@ fn process_peers(
     //println!("conn_from_rpc:{:?}", conns_from_rpc);
     //println!("conn_msgs:{:?}", conn_msgs);
 
+    let mut unmatched_messages_num = 0;
+
     res.map(|r| {
         r.as_array().map(|arr| {
             for v in arr {
@@ -148,8 +155,9 @@ fn process_peers(
                             "Cannot find connection for peer_id:{}, addr:{} :-(",
                             peer_id, msg_from_rpc.addr
                         );
+                        unmatched_messages_num += 1;
                     } else {
-                        eprintln!("Found connection for peer_id:{} :-)", peer_id);
+                        eprintln!("Found connection for peer_id:{}, addr:{}-)", peer_id, msg_from_rpc.addr);
                     }
                     let item_decr = tshark_data.decrypted_msgs.iter().find(|msg| {
                         msg.src_addr == msg_from_rpc.addr || msg.dst_addr == msg_from_rpc.addr
@@ -159,14 +167,18 @@ fn process_peers(
                             "Cannot find decrypted msg for peer_id:{}, addr:{} :-(",
                             peer_id, msg_from_rpc.addr
                         );
+                        unmatched_messages_num += 1;
                     } else {
-                        eprintln!("Found decrypted msg for peer_id:{} :-)", peer_id);
+                        eprintln!("Found decrypted msg for peer_id:{}, addr:{}-)", peer_id, msg_from_rpc.addr);
                     }
                 }
             }
         })
     })?;
 
+    if unmatched_messages_num > 0 {
+        Err(CannotFindMessagesError{})?;
+    }
     Ok(())
 }
 
@@ -250,7 +262,12 @@ fn main() {
         Ok(())
     }();
 
-    if let Err(err) = err {
-        eprintln!("Cannot run test: {}", err);
-    }
+    std::process::exit(
+        if let Err(err) = err {
+            eprintln!("Cannot match every message: {}", err);
+            1
+        } else {
+            eprintln!("Every non-empty peer matched at least one connection and one encrypted message");
+            0
+        });
 }
