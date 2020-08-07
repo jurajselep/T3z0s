@@ -4,6 +4,7 @@ use failure::Error;
 use regex::Regex;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::default::Default;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddr::V4, SocketAddr::V6, SocketAddrV4};
@@ -26,14 +27,28 @@ struct ConnectionMsg {
     dst_addr: SocketAddr,
 }
 
+#[derive(Debug, Clone)]
+struct DecryptedMsg {
+    conversation: String,
+    msg: String,
+    src_addr: SocketAddr,
+    dst_addr: SocketAddr,
+}
+
+#[derive(Debug, Clone, Default)]
+struct TsharkData {
+    connection_msgs: Vec<ConnectionMsg>,
+    decrypted_msgs: Vec<DecryptedMsg>,
+}
+
 fn unify_addr(addr: SocketAddr) -> SocketAddr {
     match addr {
-        V4(a) => V4(a),
-        V6(a) => {
+        V4(_) => addr,
+        V6(ref a) => {
             if let Some(a4) = a.ip().to_ipv4() {
                 V4(SocketAddrV4::new(a4, a.port()))
             } else {
-                V6(a)
+                addr
             }
         }
     }
@@ -95,7 +110,7 @@ fn process_connections(file_path: &str) -> Result<HashMap<String, ConnectionFrom
 fn process_peers(
     file_path: &str,
     conns_from_rpc: &HashMap<String, ConnectionFromRpc>,
-    conn_msgs: &Vec<ConnectionMsg>,
+    tshark_data: &TsharkData,
 ) -> Result<(), Error> {
     let res = parse_json(file_path);
 
@@ -125,7 +140,7 @@ fn process_peers(
 
                 if total_sent > 0 || total_received > 0 {
                     let msg_from_rpc = conns_from_rpc.get(&peer_id).unwrap();
-                    let item = conn_msgs.iter().find(|msg| {
+                    let item = tshark_data.connection_msgs.iter().find(|msg| {
                         msg.src_addr == msg_from_rpc.addr || msg.dst_addr == msg_from_rpc.addr
                     });
                     if item.is_none() {
@@ -135,6 +150,17 @@ fn process_peers(
                         );
                     } else {
                         eprintln!("Found connection for peer_id:{} :-)", peer_id);
+                    }
+                    let item_decr = tshark_data.decrypted_msgs.iter().find(|msg| {
+                        msg.src_addr == msg_from_rpc.addr || msg.dst_addr == msg_from_rpc.addr
+                    });
+                    if item_decr.is_none() {
+                        eprintln!(
+                            "Cannot find decrypted msg for peer_id:{}, addr:{} :-(",
+                            peer_id, msg_from_rpc.addr
+                        );
+                    } else {
+                        eprintln!("Found decrypted msg for peer_id:{} :-)", peer_id);
                     }
                 }
             }
@@ -152,10 +178,11 @@ where
     Ok(io::BufReader::new(file).lines())
 }
 
-fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
+fn parse_tshark(file_path: &str) -> Result<TsharkData, Error> {
     let lines = read_lines(file_path)?;
 
     let mut conn_msg_opt: Option<String> = None;
+    let mut decrypted_msg_opt: Option<String> = None;
     let mut conversation_opt: Option<String> = None;
     let mut src_addr_opt: Option<SocketAddr> = None;
     let mut dst_addr_opt: Option<SocketAddr> = None;
@@ -163,10 +190,11 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
     let re_empty_line = Regex::new(r"^\s*$")?;
     let re_conversation = Regex::new(r"T3z0s conversation: (0x[a-zA-Z0-9]+)")?;
     let re_conn_msg = Regex::new(r"T3z0s Connection Msg: (.+)$")?;
+    let re_decrypted_msg = Regex::new(r"T3z0s Decrypted Msg: (.+)$")?;
     let re_src_ip = Regex::new(r"T3z0s Debug: srcaddr:V[46][(]([^)]+)[)]")?;
     let re_dst_ip = Regex::new(r"T3z0s Debug: dstaddr:V[46][(]([^)]+)[)]")?;
 
-    let mut conn_msgs: Vec<ConnectionMsg> = vec![];
+    let mut ret = TsharkData::default();
 
     for line_res in lines {
         let line = line_res?;
@@ -177,7 +205,14 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
             let dst_addr =
                 dst_addr_opt.unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 0));
             if let Some(msg) = conn_msg_opt {
-                conn_msgs.push(ConnectionMsg {
+                ret.connection_msgs.push(ConnectionMsg {
+                    conversation: conversation,
+                    msg: msg,
+                    src_addr: unify_addr(src_addr),
+                    dst_addr: unify_addr(dst_addr),
+                });
+            } else if let Some(msg) = decrypted_msg_opt {
+                ret.decrypted_msgs.push(DecryptedMsg {
                     conversation: conversation,
                     msg: msg,
                     src_addr: unify_addr(src_addr),
@@ -186,6 +221,7 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
             }
 
             conn_msg_opt = None;
+            decrypted_msg_opt = None;
             conversation_opt = None;
             src_addr_opt = None;
             dst_addr_opt = None;
@@ -193,6 +229,8 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
             conversation_opt = Some(captures.get(1).unwrap().as_str().to_owned());
         } else if let Some(captures) = re_conn_msg.captures(&line) {
             conn_msg_opt = Some(captures.get(1).unwrap().as_str().to_owned());
+        } else if let Some(captures) = re_decrypted_msg.captures(&line) {
+            decrypted_msg_opt = Some(captures.get(1).unwrap().as_str().to_owned());
         } else if let Some(captures) = re_src_ip.captures(&line) {
             src_addr_opt = captures.get(1).unwrap().as_str().parse::<SocketAddr>().ok();
         } else if let Some(captures) = re_dst_ip.captures(&line) {
@@ -200,14 +238,14 @@ fn parse_tshark(file_path: &str) -> Result<Vec<ConnectionMsg>, Error> {
         }
     }
 
-    Ok(conn_msgs)
+    Ok(ret)
 }
 
 fn main() {
     let err = || -> Result<(), Error> {
-        let conn_msgs = parse_tshark("data/tshark.out")?;
+        let tshark_data = parse_tshark("data/tshark.out")?;
         let conns_from_rpc = process_connections("data/connections.json")?;
-        process_peers("data/peers.json", &conns_from_rpc, &conn_msgs)?;
+        process_peers("data/peers.json", &conns_from_rpc, &tshark_data)?;
 
         Ok(())
     }();
