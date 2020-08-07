@@ -1630,7 +1630,6 @@ dependencies = [
  "networking",
  "serde 1.0.110",
  "serde_json",
- "storage",
  "tezos_encoding",
  "tezos_messages",
 ]
