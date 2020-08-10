@@ -18,7 +18,7 @@ use tezos_messages::p2p::encoding::metadata::MetadataMessage;
 use super::raw_packet_msg::RawPacketMessage;
 use std::fmt;
 
-use crate::logger;
+use crate::dissector::logger;
 
 /// P2P Message decrypter from captured connection messages
 pub struct EncryptedMessageDecoder {

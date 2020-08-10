@@ -32,8 +32,6 @@ use crate::network::{
     raw_packet_msg::{RawPacketMessage, RawMessageDirection},
 };
 
-use crate::logger::msg;
-
 use crate::wireshark::packet::packet_info;
 use crate::wireshark::{
     tvbuff_t,
@@ -43,11 +41,10 @@ use crate::wireshark::{
     proto_tree_add_string,
 };
 
-use crate::error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, UnknownDecrypterError, PeerNotUpgradedError};
-
-use crate::configuration::{get_configuration, Config};
-
-use crate::dissector_info::T3zosDissectorInfo;
+use crate::dissector::error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, UnknownDecrypterError, PeerNotUpgradedError};
+use crate::dissector::configuration::{get_configuration, Config};
+use crate::dissector::dissector_info::T3zosDissectorInfo;
+use crate::dissector::logger::msg;
 use crate::get_ref;
 
 type ConversationKey = u64;

@@ -33,8 +33,13 @@ use network::{
     raw_packet_msg::{RawPacketMessage, RawMessageDirection},
 };
 
-mod logger;
-use logger::msg;
+mod dissector;
+use dissector::logger::msg;
+use dissector::conversation::Conversation;
+use dissector::error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, UnknownDecrypterError, PeerNotUpgradedError};
+use dissector::configuration::{get_configuration, Config};
+use dissector::dissector_info::T3zosDissectorInfo;
+
 
 mod wireshark;
 use wireshark::packet::packet_info;
@@ -45,18 +50,6 @@ use wireshark::{
     get_data,
     proto_tree_add_string,
 };
-
-mod error;
-use error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, UnknownDecrypterError, PeerNotUpgradedError};
-
-mod configuration;
-use configuration::{get_configuration, Config};
-
-mod conversation;
-use conversation::Conversation;
-
-mod dissector_info;
-use dissector_info::T3zosDissectorInfo;
 
 pub(crate) fn get_ref<'a, T>(p: *const T) ->&'a T {
     unsafe {&*p}

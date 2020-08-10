@@ -11,7 +11,7 @@ use crypto::hash::HashType;
 
 use hex;
 
-use crate::logger::msg;
+use crate::dissector::logger::msg;
 
 static DEFAULT_IDENTITY_FILEPATH:&'static str = "identity/identity.json";
 
