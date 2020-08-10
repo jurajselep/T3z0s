@@ -11,6 +11,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
     flex \
     git \
     libc-ares-dev \
+    llvm \
     libgcrypt-dev \
     libglib2.0-dev \
     libpcap-dev \
@@ -24,7 +25,7 @@ USER appuser
 RUN [ "/bin/bash" , "-c" , "source .cargo/env && \
     rustup install nightly && \
     rustup default nightly && \
-    make prepare && \
+    make prepare && make install-cmp-json-and-tshark && \
     make install" ]
 USER root
 RUN make sbit-for-dumpcat

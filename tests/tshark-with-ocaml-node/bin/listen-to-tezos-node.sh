@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
+set -xeo pipefail
 
 PATH_TMP="$PWD/tmp/tests/listen-to-tezos-node"
 PATH_LOG="$PATH_TMP/logs"
@@ -28,6 +28,14 @@ function fail {
 
 function try... {
     "$@" >/dev/null 2>/dev/null && ok || fail
+}
+
+function wait4file {
+    local counter=0
+    while [ ! -e "$1" -a "$counter" -lt 120 ]; do
+        counter=$((counter+1))
+        sleep 1
+    done
 }
 
 function run_tshark {
@@ -88,6 +96,13 @@ sleep $((60*minutes))
 # Check that there are expected peer responses in the tshark output.
 msg... 'Looking for Tezos replies in tshark output'
 try... grep 'T3z0s Decrypted Msg: "peerresponse:PeerMessageResponse' "$TSHARK_OUT"
+
+cp -v "$TSHARK_OUT" '/tmp/tshark.out'
+wait4file '/tmp/peers.json'
+wait4file '/tmp/connections.json'
+if ! tests/tshark-with-ocaml-node/bin/cmp-json-and-tshark; then
+    ((failed_cnt++))
+fi
 
 if [ "$failed_cnt" -eq 0 ]; then
     echo "$0: Tests passed :-)"

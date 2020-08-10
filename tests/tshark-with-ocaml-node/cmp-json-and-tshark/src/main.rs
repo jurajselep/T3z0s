@@ -157,7 +157,7 @@ fn process_peers(
                         );
                         unmatched_messages_num += 1;
                     } else {
-                        eprintln!("Found connection for peer_id:{}, addr:{}-)", peer_id, msg_from_rpc.addr);
+                        eprintln!("Found connection for peer_id:{}, addr:{} :-)", peer_id, msg_from_rpc.addr);
                     }
                     let item_decr = tshark_data.decrypted_msgs.iter().find(|msg| {
                         msg.src_addr == msg_from_rpc.addr || msg.dst_addr == msg_from_rpc.addr
@@ -169,7 +169,7 @@ fn process_peers(
                         );
                         unmatched_messages_num += 1;
                     } else {
-                        eprintln!("Found decrypted msg for peer_id:{}, addr:{}-)", peer_id, msg_from_rpc.addr);
+                        eprintln!("Found decrypted msg for peer_id:{}, addr:{} :-)", peer_id, msg_from_rpc.addr);
                     }
                 }
             }
@@ -255,9 +255,9 @@ fn parse_tshark(file_path: &str) -> Result<TsharkData, Error> {
 
 fn main() {
     let err = || -> Result<(), Error> {
-        let tshark_data = parse_tshark("data/tshark.out")?;
-        let conns_from_rpc = process_connections("data/connections.json")?;
-        process_peers("data/peers.json", &conns_from_rpc, &tshark_data)?;
+        let tshark_data = parse_tshark("/tmp/tshark.out")?;
+        let conns_from_rpc = process_connections("/tmp/connections.json")?;
+        process_peers("/tmp/peers.json", &conns_from_rpc, &tshark_data)?;
 
         Ok(())
     }();

@@ -16,8 +16,17 @@ find / -name identity.json
 ( sleep 300; killall tezos-node ) &
 (
     sleep 240;
-    wget -O /root/connections.json 'http://localhost:8732/network/connections';
-    wget -O /root/points.json 'http://localhost:8732/network/points';
-    wget -O /root/peers.json 'http://localhost:8732/network/peers';
+
+    wget -O /root/connections.json 'http://localhost:8732/network/connections' &&
+    cp -v /root/connections.json /tmp/connections.json.tmp &&
+    mv -v /tmp/connections.json.tmp /tmp/connections.json;
+
+    wget -O /root/points.json 'http://localhost:8732/network/points' &&
+    cp -v /root/points.json /tmp/points.json.tmp &&
+    mv -v /tmp/points.json.tmp /tmp/points.json;
+
+    wget -O /root/peers.json 'http://localhost:8732/network/peers' &&
+    cp -v /root/peers.json /tmp/peers.json.tmp &&
+    mv -v /tmp/peers.json.tmp /tmp/peers.json;
 ) &
 /usr/local/bin/entrypoint.sh tezos-node --net-addr :19732 --network "$TEZOS_NETWORK"

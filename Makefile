@@ -102,6 +102,9 @@ check-docker-test-image:
 		${MAKE} test-docker-image; \
 	fi
 
+.PHONY: install-cmp-json-and-tshark
+install-cmp-json-and-tshark:
+	cd tests/tshark-with-ocaml-node/cmp-json-and-tshark && cargo install --path . --root ..
 
 .PHONY: test-tshark-with-carthagenet
 test-tshark-with-carthagenet:
