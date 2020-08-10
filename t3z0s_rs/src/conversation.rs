@@ -26,9 +26,6 @@ use tezos_messages::p2p::{
 };
 use std::fmt;
 
-// TODO: DRF: Move ConnectionMessage from tezedge-debugger to some library or turn tezedge-debugger to a mod?
-//mod connection_message;
-//use connection_message::ConnectionMessage;
 use crate::network::{
     connection_message::ConnectionMessage,
     msg_decoder::{EncryptedMessage, EncryptedMessageDecoder},
@@ -338,10 +335,10 @@ impl fmt::Display for Conversation {
     }
 }
 
-static mut conversations_map: Option<HashMap<*const tcp_analysis, Conversation>> = None;
+static mut CONVERSATIONS_MAP: Option<HashMap<*const tcp_analysis, Conversation>> = None;
 
 fn get_conv_map() -> &'static mut HashMap<*const tcp_analysis, Conversation> {
-    unsafe { conversations_map.get_or_insert(HashMap::new()) }
+    unsafe { CONVERSATIONS_MAP.get_or_insert(HashMap::new()) }
 }
 
 fn get_conv<'a>(key: *const tcp_analysis) -> &'a mut Conversation {

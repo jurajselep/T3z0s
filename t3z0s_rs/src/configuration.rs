@@ -39,12 +39,8 @@ impl Config {
 }
 
 lazy_static! {
-    static ref config_rwlock: RwLock<Option<Config>> = RwLock::new(None);
+    static ref CONFIG_RWLOCK: RwLock<Option<Config>> = RwLock::new(None);
 }
-
-// https://stackoverflow.com/questions/27791532/how-do-i-create-a-global-mutable-singleton
-// https://stackoverflow.com/questions/55977067/how-can-i-create-a-static-string-in-rust
-// https://stackoverflow.com/questions/24145823/how-do-i-convert-a-c-string-into-a-rust-string-and-back-via-ffi
 
 pub fn load_identity(filepath: &str) -> Result<Identity, Error> {
     msg(format!("load_identity:{}", filepath));
@@ -71,11 +67,11 @@ fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Err
 #[no_mangle]
 pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char) {
     if identity_json_filepath.is_null() {
-        let mut cfg = config_rwlock.write().unwrap();
+        let mut cfg = CONFIG_RWLOCK.write().unwrap();
         *cfg = None;
     } else {
         let cfg_res = load_preferences(identity_json_filepath);
-        let mut cfg = config_rwlock.write().unwrap();
+        let mut cfg = CONFIG_RWLOCK.write().unwrap();
         *cfg = match cfg_res {
             Ok(new_cfg) => Some(new_cfg),
             Err(e) => { msg(format!("Cannot load configuration: {}", e)); None }
@@ -85,7 +81,7 @@ pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char
 
 pub(crate) fn get_configuration() -> Option<Config> {
     msg(format!("get_configuration"));
-    let cfg = config_rwlock.read().unwrap();
+    let cfg = CONFIG_RWLOCK.read().unwrap();
     // TODO: Unecessary clone, maybe use shared-ptr?
     cfg.clone()
 }
