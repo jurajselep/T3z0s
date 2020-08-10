@@ -38,12 +38,12 @@ use logger::msg;
 
 mod wireshark;
 use wireshark::packet::packet_info;
-use wireshark::ws::{
+use wireshark::{
     tvbuff_t,
     tcp_analysis,
     proto_tree,
-    get_data_safe,
-    proto_tree_add_string_safe,
+    get_data,
+    proto_tree_add_string,
 };
 
 mod error;
@@ -81,7 +81,7 @@ pub extern "C" fn t3z03s_dissect_packet(
     match conv.process_packet(info, pinfo, tvb, proto_tree, tcpd) {
         Err(e) => {
             msg(format!("E: Cannot process packet: {}", e));
-            proto_tree_add_string_safe(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
+            proto_tree_add_string(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
             0 as c_int
         },
         Ok(size) => size as c_int

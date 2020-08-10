@@ -35,12 +35,12 @@ use crate::network::{
 use crate::logger::msg;
 
 use crate::wireshark::packet::packet_info;
-use crate::wireshark::ws::{
+use crate::wireshark::{
     tvbuff_t,
     tcp_analysis,
     proto_tree,
-    get_data_safe,
-    proto_tree_add_string_safe,
+    get_data,
+    proto_tree_add_string,
 };
 
 use crate::error::{NotT3z0sStreamError, T3z0sNodeIdentityNotLoadedError, UnknownDecrypterError, PeerNotUpgradedError};
@@ -230,7 +230,7 @@ impl Conversation {
         if !self.is_ok() { Err(NotT3z0sStreamError)?; }
 
         let counter = self.inc_counter();
-        let payload = get_data_safe(tvb);
+        let payload = get_data(tvb);
         if counter <= 2 {
             assert!(counter >= 1);
             let conn_msg = Conversation::process_connection_msg(payload.to_vec())?;
@@ -293,30 +293,30 @@ impl Conversation {
             self.frames.insert(frame_num, res);
         }
 
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("srcaddr:{:?}", srcaddr));
-        proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("dstaddr:{:?}", dstaddr));
+        proto_tree_add_string(proto_tree, info.hf_debug, tvb, 0, 0, format!("srcaddr:{:?}", srcaddr));
+        proto_tree_add_string(proto_tree, info.hf_debug, tvb, 0, 0, format!("dstaddr:{:?}", dstaddr));
 
         let res_item = self.frames.get(&frame_num).unwrap();
         let item = match res_item {
             Err(ref e) => {
-                proto_tree_add_string_safe(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
+                proto_tree_add_string(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
             },
             Ok(ref item) =>  match item {
                 ConversationItem::Nothing => {
-                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("No message"));
+                    proto_tree_add_string(proto_tree, info.hf_debug, tvb, 0, 0, format!("No message"));
                 },
                 ConversationItem::ConnMsg{counter, ref msg} => {
-                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
-                    proto_tree_add_string_safe(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?}", msg));
+                    proto_tree_add_string(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
+                    proto_tree_add_string(proto_tree, info.hf_connection_msg, tvb, 0, 0, format!("{:?}", msg));
                 },
                 ConversationItem::DecryptedMsg{counter, ref msg} => {
-                    proto_tree_add_string_safe(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
-                    proto_tree_add_string_safe(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?}", msg));
+                    proto_tree_add_string(proto_tree, info.hf_debug, tvb, 0, 0, format!("counter:{:?}", counter));
+                    proto_tree_add_string(proto_tree, info.hf_decrypted_msg, tvb, 0, 0, format!("{:?}", msg));
                 }
             }
         };
 
-        let payload = get_data_safe(tvb);
+        let payload = get_data(tvb);
         Ok(payload.len())
     }
 
