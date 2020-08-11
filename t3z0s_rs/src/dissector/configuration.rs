@@ -1,19 +1,19 @@
+use crypto::hash::HashType;
+use failure::Error;
 use lazy_static::lazy_static;
 use libc::{c_char, c_int, c_uint, c_void};
 use serde::Deserialize;
-use std::fs;
 use std::ffi::CStr;
 use std::ffi::OsString;
-use std::sync::RwLock;
+use std::fs;
 use std::option::Option;
-use failure::Error;
-use crypto::hash::HashType;
+use std::sync::RwLock;
 
 use hex;
 
 use crate::dissector::logger::msg;
 
-static DEFAULT_IDENTITY_FILEPATH:&'static str = "identity/identity.json";
+static DEFAULT_IDENTITY_FILEPATH: &'static str = "identity/identity.json";
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 /// Node identity information
@@ -55,13 +55,15 @@ pub fn load_identity(filepath: &str) -> Result<Identity, Error> {
 }
 
 fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Error> {
-    let identity_json_filepath = unsafe {
-        CStr::from_ptr(identity_json_filepath).to_str()?.to_owned()
-    };
+    let identity_json_filepath =
+        unsafe { CStr::from_ptr(identity_json_filepath).to_str()?.to_owned() };
 
     let identity = load_identity(&identity_json_filepath)?;
 
-    Ok(Config{identity_json_filepath, identity})
+    Ok(Config {
+        identity_json_filepath,
+        identity,
+    })
 }
 
 #[no_mangle]
@@ -74,7 +76,10 @@ pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char
         let mut cfg = CONFIG_RWLOCK.write().unwrap();
         *cfg = match cfg_res {
             Ok(new_cfg) => Some(new_cfg),
-            Err(e) => { msg(format!("Cannot load configuration: {}", e)); None }
+            Err(e) => {
+                msg(format!("Cannot load configuration: {}", e));
+                None
+            }
         }
     }
 }

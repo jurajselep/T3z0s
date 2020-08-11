@@ -1,7 +1,6 @@
 use std::error;
 use std::fmt;
 
-
 #[derive(Debug, Clone)]
 pub struct UnexpectedAddressTypeError;
 
@@ -17,7 +16,6 @@ impl error::Error for UnexpectedAddressTypeError {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct CannotReadIPv4BytesError;
 
@@ -32,7 +30,6 @@ impl error::Error for CannotReadIPv4BytesError {
         None
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct CannotReadIPv6BytesError;

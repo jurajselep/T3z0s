@@ -1,20 +1,17 @@
 // Copyright (c) SimpleStaking and Tezedge Contributors
 // SPDX-License-Identifier: MIT
 
+use serde::{Deserialize, Serialize};
+use std::{convert::TryFrom, io::Cursor};
 use tezos_encoding::binary_reader::BinaryReaderError;
+use tezos_encoding::encoding::{Encoding, Field, HasEncoding};
 use tezos_messages::p2p::{
-    encoding::version::Version,
     binary_message::{
+        cache::{BinaryDataCache, CacheReader, CacheWriter, CachedData},
         BinaryChunk, BinaryMessage,
-        cache::{CachedData, CacheReader, CacheWriter, BinaryDataCache},
     },
+    encoding::version::Version,
 };
-use std::{
-    io::Cursor,
-    convert::TryFrom,
-};
-use serde::{Serialize, Deserialize};
-use tezos_encoding::encoding::{Field, HasEncoding, Encoding};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Mapped connection message as defined in tezos protocol
@@ -31,7 +28,13 @@ pub struct ConnectionMessage {
 
 impl ConnectionMessage {
     /// Create new connection message from its parts
-    pub fn new(port: u16, public_key: &str, proof_of_work_stamp: &str, message_nonce: &[u8], versions: Vec<Version>) -> Self {
+    pub fn new(
+        port: u16,
+        public_key: &str,
+        proof_of_work_stamp: &str,
+        message_nonce: &[u8],
+        versions: Vec<Version>,
+    ) -> Self {
         ConnectionMessage {
             port,
             versions,
@@ -61,7 +64,7 @@ impl HasEncoding for ConnectionMessage {
             Field::new("public_key", Encoding::sized(32, Encoding::Bytes)),
             Field::new("proof_of_work_stamp", Encoding::sized(24, Encoding::Bytes)),
             Field::new("message_nonce", Encoding::sized(24, Encoding::Bytes)),
-            Field::new("versions", Encoding::list(Version::encoding()))
+            Field::new("versions", Encoding::list(Version::encoding())),
         ])
     }
 }

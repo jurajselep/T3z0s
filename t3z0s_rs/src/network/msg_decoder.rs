@@ -1,16 +1,14 @@
+use bytes::Buf;
 use crypto::{
-    crypto_box::{PrecomputedKey, decrypt},
+    crypto_box::{decrypt, PrecomputedKey},
     nonce::Nonce,
 };
-use tezos_encoding::{
-    binary_reader::BinaryReaderError
-};
+use std::convert::TryFrom;
+use tezos_encoding::binary_reader::BinaryReaderError;
 use tezos_messages::p2p::{
     binary_message::{BinaryChunk, BinaryMessage},
     encoding::peer::PeerMessageResponse,
 };
-use std::convert::TryFrom;
-use bytes::Buf;
 //use crate::actors::peer_message::*;
 //use crate::storage::{MessageStore, StoreMessage};
 use tezos_messages::p2p::encoding::metadata::MetadataMessage;
@@ -73,8 +71,13 @@ impl EncryptedMessageDecoder {
 
     /// Process received message, if complete message is received, decypher, deserialize and store it.
     pub fn recv_msg(&mut self, enc: &RawPacketMessage) -> Option<EncryptedMessage> {
-        logger::msg(format!("recv_msg: raw-len:{}; inc_buf-len:{}; out_buf-len:{}; dec_buf-len:{}", enc.payload().len(),
-            self.inc_buf.len(), self.out_buf.len(), self.dec_buf.len()));
+        logger::msg(format!(
+            "recv_msg: raw-len:{}; inc_buf-len:{}; out_buf-len:{}; dec_buf-len:{}",
+            enc.payload().len(),
+            self.inc_buf.len(),
+            self.out_buf.len(),
+            self.dec_buf.len()
+        ));
         if enc.has_payload() {
             self.inc_buf.extend_from_slice(&enc.payload());
 
@@ -95,9 +98,7 @@ impl EncryptedMessageDecoder {
         logger::msg(format!("try_decrypt: len: {}", len));
         if self.inc_buf[2..].len() >= len {
             let chunk = match BinaryChunk::try_from(self.inc_buf[0..len + 2].to_vec()) {
-                Ok(chunk) => {
-                    chunk
-                }
+                Ok(chunk) => chunk,
                 Err(e) => {
                     logger::msg(format!("Failed to load binary chunk: {}", e));
                     return None;
@@ -124,9 +125,13 @@ impl EncryptedMessageDecoder {
     /// was correctly serialized
     fn try_deserialize(&mut self, mut msg: Vec<u8>) -> Option<EncryptedMessage> {
         if !self.metadata {
-            Some(EncryptedMessage::Metadata(self.try_deserialize_meta(&mut msg)?))
+            Some(EncryptedMessage::Metadata(
+                self.try_deserialize_meta(&mut msg)?,
+            ))
         } else {
-            Some(EncryptedMessage::PeerResponse(self.try_deserialize_p2p(&mut msg)?))
+            Some(EncryptedMessage::PeerResponse(
+                self.try_deserialize_p2p(&mut msg)?,
+            ))
         }
     }
 
@@ -160,8 +165,10 @@ impl EncryptedMessageDecoder {
                         return None;
                     }
                 }
-            };
-        } else { None }
+            }
+        } else {
+            None
+        }
     }
 
     /// Try to deserialized p2p message
@@ -197,8 +204,10 @@ impl EncryptedMessageDecoder {
                         return None;
                     }
                 }
-            };
-        } else { None }
+            }
+        } else {
+            None
+        }
     }
 
     #[inline]

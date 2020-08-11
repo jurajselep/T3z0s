@@ -1,8 +1,11 @@
-use std::vec::Vec;
 use std::fmt;
+use std::vec::Vec;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum RawMessageDirection { INCOMING, OUTGOING }
+pub enum RawMessageDirection {
+    INCOMING,
+    OUTGOING,
+}
 impl fmt::Display for RawMessageDirection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -17,12 +20,18 @@ impl fmt::Display for RawMessageDirection {
 
 pub struct RawPacketMessage {
     direction: RawMessageDirection,
-//    kind: RawMessageKind,
+    //    kind: RawMessageKind,
     payload: Vec<u8>,
 }
 impl RawPacketMessage {
-    pub fn new<'a>(direction: RawMessageDirection, /*kind: RawMessageKind,*/ payload: &'a [u8]) -> Self {
-        Self { direction, /* kind ,*/ payload: payload.to_vec() }
+    pub fn new<'a>(
+        direction: RawMessageDirection,
+        /*kind: RawMessageKind,*/ payload: &'a [u8],
+    ) -> Self {
+        Self {
+            direction,
+            /* kind ,*/ payload: payload.to_vec(),
+        }
     }
 
     pub fn has_payload(&self) -> bool {
@@ -36,7 +45,7 @@ impl RawPacketMessage {
         self.direction == RawMessageDirection::INCOMING
     }
 
-//    pub fn is_inner(&self) -> bool {
-//        self.kind == RawMessageKind::INNER
-//    }
+    //    pub fn is_inner(&self) -> bool {
+    //        self.kind == RawMessageKind::INNER
+    //    }
 }
