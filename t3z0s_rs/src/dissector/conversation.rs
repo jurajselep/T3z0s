@@ -54,7 +54,7 @@ enum ConversationItem {
     },
 }
 
-// Data stored for every T3z0s stream
+/// Data stored for every T3z0s stream
 pub(crate) struct Conversation {
     counter: u64,
     /* *** PeerProcessor from Tezedge-Debugger *** */
@@ -107,38 +107,6 @@ impl Conversation {
         }
     }
 
-    /*
-    fn remote_addr(&self) -> SocketAddr {
-        assert!(self.conn_msgs.len() == 2);
-
-        if self.is_incoming {
-            self.conn_msgs[0].1
-        } else {
-            self.conn_msgs[1].1
-        }
-    }
-
-    fn local_conn_msg(&self) -> &ConnectionMessage {
-        assert!(self.conn_msgs.len() == 2);
-
-        if self.is_incoming {
-            &self.conn_msgs[1].0
-        } else {
-            &self.conn_msgs[0].0
-        }
-    }
-
-    fn remote_conn_msg(&self) -> &ConnectionMessage {
-        assert!(self.conn_msgs.len() == 2);
-
-        if self.is_incoming {
-            &self.conn_msgs[0].0
-        } else {
-            &self.conn_msgs[1].0
-        }
-    }
-    */
-
     fn inc_counter(&mut self) -> u64 {
         self.counter += 1;
         self.counter
@@ -153,7 +121,6 @@ impl Conversation {
     fn upgrade(&mut self, configuration: &Config) -> Result<(), Error> {
         let ((first, _), (second, _)) = (&self.conn_msgs[0], &self.conn_msgs[1]);
         let first_pk = HashType::CryptoboxPublicKeyHash.bytes_to_string(&first.public_key);
-        // FIXME: DRF: Use the same deserialization as in debugger.
         msg(format!(
             "keys: first:{}; {:?}; second:{}; {:?}; configuration:{}; {}; secret-key:{}",
             HashType::CryptoboxPublicKeyHash.bytes_to_string(&first.public_key),
@@ -392,10 +359,14 @@ impl Conversation {
         Ok(payload.len())
     }
 
+    /// Get or create a Conversation that is related to the given tcp_analysis pointer
+    /// (Should be the same during the lifetime of the connection).
     pub fn get_or_create<'a>(key: *const tcp_analysis) -> &'a mut Self {
         get_conv(key)
     }
 
+    /// Remove a Conversation that is related to the given tcp_analysis pointer.
+    /// Do nothing if the given tcp_analysis pointer is not known.
     pub fn remove<'a>(key: *const tcp_analysis) {
         get_conv_map().remove(&key);
     }
@@ -410,12 +381,18 @@ impl fmt::Display for Conversation {
     }
 }
 
+// Because we interact with single threaded callback based C code,
+// it is practical to use singletons.
+
+// It is not possible to use Mutex/RwLock, because C-pointer is not Send.
 static mut CONVERSATIONS_MAP: Option<HashMap<*const tcp_analysis, Conversation>> = None;
 
+/// Get or create a hash map of conversations
 fn get_conv_map() -> &'static mut HashMap<*const tcp_analysis, Conversation> {
     unsafe { CONVERSATIONS_MAP.get_or_insert(HashMap::new()) }
 }
 
+/// Get conversation for the given tcp_analysis or create a new one
 fn get_conv<'a>(key: *const tcp_analysis) -> &'a mut Conversation {
     get_conv_map()
         .entry(key)

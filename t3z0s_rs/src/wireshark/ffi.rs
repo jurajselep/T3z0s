@@ -1,17 +1,23 @@
+// Functions and structures from Wireshark that are used by the dissector and
+// that are not imported automatically by bindgen.
+
 use crate::wireshark::packet::proto_item;
 use crate::wireshark::packet::wmem_allocator_t;
-/// Functions from Wireshark that are used by this dissector
 use libc::{c_char, c_int, c_uint};
 
-/// Opaque structs from Wireshark
+/// Opaque struct from Wireshark
 #[repr(C)]
 pub struct tvbuff_t {
     _private: [u8; 0],
 }
+
+/// Opaque struct from Wireshark
 #[repr(C)]
 pub struct tcp_analysis {
     _private: [u8; 0],
 }
+
+/// Opaque struct from Wireshark
 #[repr(C)]
 pub struct proto_tree {
     _private: [u8; 0],

@@ -1,8 +1,8 @@
 use std::fs::OpenOptions;
 use std::io::{Result, Write};
 
-// This is simple logger introduced during development, because
-//   it is not possible to print to stdout/stderr inside wireshark/tshark.
+/// This is simple logger introduced during development, because
+/// it is not possible to print to stdout/stderr inside wireshark/tshark.
 fn msg_detail(msg: &str) -> Result<()> {
     let mut f = OpenOptions::new()
         .append(true)

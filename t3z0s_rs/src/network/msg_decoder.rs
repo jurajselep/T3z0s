@@ -5,13 +5,11 @@ use crypto::{
 };
 use std::convert::TryFrom;
 use tezos_encoding::binary_reader::BinaryReaderError;
+use tezos_messages::p2p::encoding::metadata::MetadataMessage;
 use tezos_messages::p2p::{
     binary_message::{BinaryChunk, BinaryMessage},
     encoding::peer::PeerMessageResponse,
 };
-//use crate::actors::peer_message::*;
-//use crate::storage::{MessageStore, StoreMessage};
-use tezos_messages::p2p::encoding::metadata::MetadataMessage;
 
 use super::raw_packet_msg::RawPacketMessage;
 use std::fmt;
@@ -20,7 +18,6 @@ use crate::dissector::logger;
 
 /// P2P Message decrypter from captured connection messages
 pub struct EncryptedMessageDecoder {
-    //db: MessageStore,
     precomputed_key: PrecomputedKey,
     remote_nonce: Nonce,
     peer_id: String,

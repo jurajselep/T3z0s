@@ -25,9 +25,10 @@ pub struct Identity {
 }
 
 #[derive(Debug, Clone)]
+/// Dissector configuration
 pub(crate) struct Config {
     pub identity_json_filepath: String,
-    pub identity: Identity,
+    pub identity: Identity, // As loaded from identity_json_filepath
 }
 impl Config {
     fn default() -> Result<Self, Error> {
@@ -42,18 +43,16 @@ lazy_static! {
     static ref CONFIG_RWLOCK: RwLock<Option<Config>> = RwLock::new(None);
 }
 
+/// Load identity from given file path
 pub fn load_identity(filepath: &str) -> Result<Identity, Error> {
-    msg(format!("load_identity:{}", filepath));
     let content = fs::read_to_string(filepath)?;
     let mut identity: Identity = serde_json::from_str(&content)?;
-    msg(format!("msg-identity:original{:?}", identity.public_key));
     let decoded = hex::decode(&identity.public_key)?;
-    msg(format!("msg-identity:decoded{:?}", decoded));
     identity.public_key = HashType::CryptoboxPublicKeyHash.bytes_to_string(&decoded);
-    msg(format!("msg-identity:{}", identity.public_key));
     Ok(identity)
 }
 
+/// Load identity from file whose path is stored in C string
 fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Error> {
     let identity_json_filepath =
         unsafe { CStr::from_ptr(identity_json_filepath).to_str()?.to_owned() };
@@ -67,6 +66,7 @@ fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Err
 }
 
 #[no_mangle]
+/// Called by Wireshark when module preferences change
 pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char) {
     if identity_json_filepath.is_null() {
         let mut cfg = CONFIG_RWLOCK.write().unwrap();
@@ -84,6 +84,10 @@ pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char
     }
 }
 
+// Because we interact with single threaded callback based C code,
+// it is practical to use singletons.
+
+/// Return current version of configuration (as specified by last call to t3z0s_preferences_update())
 pub(crate) fn get_configuration() -> Option<Config> {
     msg(format!("get_configuration"));
     let cfg = CONFIG_RWLOCK.read().unwrap();

@@ -47,11 +47,14 @@ pub(crate) fn get_ref<'a, T>(p: *const T) -> &'a T {
 }
 
 #[no_mangle]
+/// This function is called on C side when data related to some Tezos connection
+/// (== Conversation from Wireshark point of view) needs to be releases.
 pub extern "C" fn t3z03s_free_conv_data(p_data: *mut c_void) {
     Conversation::remove(p_data as *const tcp_analysis);
 }
 
 #[no_mangle]
+/// Entry point that is called on C side when one frame needs to be dissected
 pub extern "C" fn t3z03s_dissect_packet(
     p_info: *const T3zosDissectorInfo,
     tvb: *mut tvbuff_t,
@@ -71,13 +74,5 @@ pub extern "C" fn t3z03s_dissect_packet(
             0 as c_int
         }
         Ok(size) => size as c_int,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

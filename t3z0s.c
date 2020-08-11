@@ -169,9 +169,4 @@ proto_reg_handoff_t3z0s(void)
 {
     t3z0s_handle = create_dissector_handle(dissect_t3z0s_old, proto_t3z0s);
     heur_dissector_add("tcp", dissect_t3z0s, "T3z0s", "t3z0s_tcp", proto_t3z0s, HEURISTIC_ENABLE);
-    // dissector_add_uint("udp.port", 1024, t3z0s_handle);
-    // dissector_add_uint("tcp.port", 1024, t3z0s_handle);
-    // dissector_add_string("t3z0s.tun_node", "tun0", t3z0s_handle);
-    // dissector_add_string("t3z0s.tun_proxy", "tun1", t3z0s_handle);
-    // dissector_add_string("t3z0s.identity_file", "identity.json", t3z0s_handle);
 }

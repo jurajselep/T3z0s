@@ -7,7 +7,7 @@ WIRESHARK_OPT_PATH:=${MK_PATH}/opt
 WIRESHARK_BIN_PATH:=${WIRESHARK_OPT_PATH}/bin
 
 ############################################################
-# Preparation steps, must be called as root :-(
+# Preparation steps
 
 .PHONY: clone-wireshark
 clone-wireshark:
@@ -61,6 +61,7 @@ install: build
 	cd "${WIRESHARK_PATH}" && cd build && make install
 
 .PHONY: sbit-for-dumpcat
+# This requires root privileges
 sbit-for-dumpcat:
 	cd "${WIRESHARK_BIN_PATH}" && chown root.root dumpcap && chmod u+s dumpcap
 
