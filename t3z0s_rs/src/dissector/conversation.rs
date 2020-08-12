@@ -42,9 +42,10 @@ use crate::get_ref;
 type ConversationKey = u64;
 
 #[derive(Debug, Clone)]
+/// Cached data for frames/packets that have been already presented to the dissector
 enum ConversationItem {
     Nothing,
-    ConnMsg {
+    ConnectionMsg {
         counter: u64,
         msg: ConnectionMessage,
     },
@@ -59,7 +60,7 @@ pub(crate) struct Conversation {
     counter: u64,
     /* *** PeerProcessor from Tezedge-Debugger *** */
     // addr: SocketAddr,
-    conn_msgs: Vec<(ConnectionMessage, SocketAddr)>,
+    connection_msgs: Vec<(ConnectionMessage, SocketAddr)>,
     is_initialized: bool,
     is_incoming: bool,
     is_dead: bool,
@@ -69,6 +70,7 @@ pub(crate) struct Conversation {
     public_key: Vec<u8>,
     incoming_decrypter: Option<EncryptedMessageDecoder>,
     outgoing_decrypter: Option<EncryptedMessageDecoder>,
+    /// Cache of already visited packets/frames
     frames: HashMap<ConversationKey, Result<ConversationItem, Error>>,
 }
 impl Conversation {
@@ -76,7 +78,7 @@ impl Conversation {
         Conversation {
             counter: 0,
             /* PeerProcessor */
-            conn_msgs: Vec::<(ConnectionMessage, SocketAddr)>::with_capacity(2),
+            connection_msgs: Vec::<(ConnectionMessage, SocketAddr)>::with_capacity(2),
             is_initialized: false,
             is_incoming: false,
             is_dead: false,
@@ -89,37 +91,42 @@ impl Conversation {
         }
     }
 
+    /// Check whether Conversation is in state when it wikk be able to decrypt messages
     fn is_ok(&self) -> bool {
         match self.counter {
             0 => true,
-            1 => self.conn_msgs.len() == 1,
-            _ => self.conn_msgs.len() == 2,
+            1 => self.connection_msgs.len() == 1,
+            _ => self.connection_msgs.len() == 2,
         }
     }
 
+    /// Return local address of the node as has been obtained from connection message.
     fn local_addr(&self) -> SocketAddr {
-        assert!(self.conn_msgs.len() == 2);
+        assert!(self.connection_msgs.len() == 2);
 
         if self.is_incoming {
-            self.conn_msgs[1].1
+            self.connection_msgs[1].1
         } else {
-            self.conn_msgs[0].1
+            self.connection_msgs[0].1
         }
     }
 
+    /// Increment packet counter and return its new value
     fn inc_counter(&mut self) -> u64 {
         self.counter += 1;
         self.counter
     }
 
+    /// Expect the payload to be connection message and process it
     pub fn process_connection_msg(payload: Vec<u8>) -> Result<ConnectionMessage, Error> {
         let chunk = BinaryChunk::try_from(payload)?;
-        let conn_msg = ConnectionMessage::try_from(chunk)?;
-        Ok(conn_msg)
+        let connection_msg = ConnectionMessage::try_from(chunk)?;
+        Ok(connection_msg)
     }
 
+    /// Upgrade tezos connection (switch to encrypted connection)
     fn upgrade(&mut self, configuration: &Config) -> Result<(), Error> {
-        let ((first, _), (second, _)) = (&self.conn_msgs[0], &self.conn_msgs[1]);
+        let ((first, _), (second, _)) = (&self.connection_msgs[0], &self.connection_msgs[1]);
         let first_pk = HashType::CryptoboxPublicKeyHash.bytes_to_string(&first.public_key);
         msg(format!(
             "keys: first:{}; {:?}; second:{}; {:?}; configuration:{}; {}; secret-key:{}",
@@ -185,6 +192,7 @@ impl Conversation {
         Ok(())
     }
 
+    /// Interpret RawPacketMessage as encrypted message and decrypt and desirialise it
     fn process_encrypted_msg(
         &mut self,
         msg: &mut RawPacketMessage,
@@ -202,10 +210,11 @@ impl Conversation {
         }
     }
 
+    /// Process frame/packet that hasn't been presented to the dissector yet
     fn process_unvisited_packet(
         self: &mut Self,
-        info: &T3zosDissectorInfo,
-        pinfo: &packet_info,
+        dissector_info: &T3zosDissectorInfo,
+        packet_info: &packet_info,
         tvb: *mut tvbuff_t,
         proto_tree: *mut proto_tree,
         tcpd: *const tcp_analysis,
@@ -220,20 +229,20 @@ impl Conversation {
         let payload = get_data(tvb);
         if counter <= 2 {
             assert!(counter >= 1);
-            let conn_msg = Conversation::process_connection_msg(payload.to_vec())?;
+            let connection_msg = Conversation::process_connection_msg(payload.to_vec())?;
 
-            let ip_addr = IpAddr::try_from(pinfo.src)?;
-            let sock_addr = SocketAddr::new(ip_addr, pinfo.srcport as u16);
+            let ip_addr = IpAddr::try_from(packet_info.src)?;
+            let sock_addr = SocketAddr::new(ip_addr, packet_info.srcport as u16);
             // NOTE: Duplicate message should not happen? We use TCP stream, not raw packets stream.
-            self.conn_msgs.push((conn_msg.clone(), sock_addr));
-            if self.conn_msgs.len() == 2 {
+            self.connection_msgs.push((connection_msg.clone(), sock_addr));
+            if self.connection_msgs.len() == 2 {
                 let configuration = get_configuration().ok_or(T3z0sNodeIdentityNotLoadedError)?;
                 self.upgrade(&configuration)?;
                 msg(format!("Upgraded peer! {}", self))
             }
-            Ok(ConversationItem::ConnMsg {
+            Ok(ConversationItem::ConnectionMsg {
                 counter: counter,
-                msg: conn_msg,
+                msg: connection_msg,
             })
         } else {
             if self.is_initialized {
@@ -263,29 +272,36 @@ impl Conversation {
         }
     }
 
+    /// Process one frame/packet that is presented to the dissector
     pub fn process_packet(
         self: &mut Self,
-        info: &T3zosDissectorInfo,
-        pinfo: &packet_info,
+        dissector_info: &T3zosDissectorInfo,
+        packet_info: &packet_info,
         tvb: *mut tvbuff_t,
         proto_tree: *mut proto_tree,
         tcpd: *const tcp_analysis,
     ) -> Result<usize, Error> {
-        let is_visited = get_ref(pinfo.fd).visited() != 0;
-        let frame_num = get_ref(pinfo.fd).num as u64;
+        let is_visited = get_ref(packet_info.fd).visited() != 0;
+        // Every frame/packet is represented by its unique number that is
+        // generated by Wireshark.
+        let frame_num = get_ref(packet_info.fd).num as u64;
 
-        let srcaddr = SocketAddr::new(IpAddr::try_from(pinfo.src)?, pinfo.srcport as u16);
-        let dstaddr = SocketAddr::new(IpAddr::try_from(pinfo.dst)?, pinfo.destport as u16);
+        let srcaddr = SocketAddr::new(IpAddr::try_from(packet_info.src)?, packet_info.srcport as u16);
+        let dstaddr = SocketAddr::new(IpAddr::try_from(packet_info.dst)?, packet_info.destport as u16);
 
+        // If packet is presented yo yhe dissector for the first time, then try
+        // to process it and store the result to the cache.
+        // Don't ptocess packets that have been already processed, because it would
+        // break decryption.
         if !is_visited {
             let res = self
-                .process_unvisited_packet(info, pinfo, tvb, proto_tree, tcpd, &srcaddr, &dstaddr);
+                .process_unvisited_packet(dissector_info, packet_info, tvb, proto_tree, tcpd, &srcaddr, &dstaddr);
             self.frames.insert(frame_num, res);
         }
 
         proto_tree_add_string(
             proto_tree,
-            info.hf_debug,
+            dissector_info.hf_debug,
             tvb,
             0,
             0,
@@ -293,33 +309,36 @@ impl Conversation {
         );
         proto_tree_add_string(
             proto_tree,
-            info.hf_debug,
+            dissector_info.hf_debug,
             tvb,
             0,
             0,
             format!("dstaddr:{:?}", dstaddr),
         );
 
+        // Get packet/frame from the cache and store its content to proto_tree.
+        // `proto_tree` is ised internally by Wireshark to display content of
+        // dissected packets.
         let res_item = self.frames.get(&frame_num).unwrap();
         let item = match res_item {
             Err(ref e) => {
-                proto_tree_add_string(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
+                proto_tree_add_string(proto_tree, dissector_info.hf_error, tvb, 0, 0, format!("{}", e));
             }
             Ok(ref item) => match item {
                 ConversationItem::Nothing => {
                     proto_tree_add_string(
                         proto_tree,
-                        info.hf_debug,
+                        dissector_info.hf_debug,
                         tvb,
                         0,
                         0,
                         format!("No message"),
                     );
                 }
-                ConversationItem::ConnMsg { counter, ref msg } => {
+                ConversationItem::ConnectionMsg { counter, ref msg } => {
                     proto_tree_add_string(
                         proto_tree,
-                        info.hf_debug,
+                        dissector_info.hf_debug,
                         tvb,
                         0,
                         0,
@@ -327,7 +346,7 @@ impl Conversation {
                     );
                     proto_tree_add_string(
                         proto_tree,
-                        info.hf_connection_msg,
+                        dissector_info.hf_connection_msg,
                         tvb,
                         0,
                         0,
@@ -337,7 +356,7 @@ impl Conversation {
                 ConversationItem::DecryptedMsg { counter, ref msg } => {
                     proto_tree_add_string(
                         proto_tree,
-                        info.hf_debug,
+                        dissector_info.hf_debug,
                         tvb,
                         0,
                         0,
@@ -345,7 +364,7 @@ impl Conversation {
                     );
                     proto_tree_add_string(
                         proto_tree,
-                        info.hf_decrypted_msg,
+                        dissector_info.hf_decrypted_msg,
                         tvb,
                         0,
                         0,
@@ -375,8 +394,8 @@ impl fmt::Display for Conversation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "counter:{}; is_initialised:{}; is_incoming:{}; is_dead:{}; conn_msgs:{:?};",
-            self.counter, self.is_initialized, self.is_incoming, self.is_dead, self.conn_msgs
+            "counter:{}; is_initialised:{}; is_incoming:{}; is_dead:{}; connection_msgs:{:?};",
+            self.counter, self.is_initialized, self.is_incoming, self.is_dead, self.connection_msgs
         )
     }
 }
