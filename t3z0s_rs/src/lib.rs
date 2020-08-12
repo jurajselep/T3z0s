@@ -42,6 +42,7 @@ mod wireshark;
 use wireshark::packet::packet_info;
 use wireshark::{get_data, proto_tree, proto_tree_add_string, tcp_analysis, tvbuff_t};
 
+/// Convert a C pointer into a Rust reference
 pub(crate) fn get_ref<'a, T>(p: *const T) -> &'a T {
     unsafe { &*p }
 }
@@ -56,21 +57,33 @@ pub extern "C" fn t3z03s_free_conv_data(p_data: *mut c_void) {
 #[no_mangle]
 /// Entry point that is called on C side when one frame needs to be dissected
 pub extern "C" fn t3z03s_dissect_packet(
-    p_info: *const T3zosDissectorInfo,
-    tvb: *mut tvbuff_t,
+    p_dissector_info: *const T3zosDissectorInfo,
+    tvb: *mut tvbuff_t, // Wireshark packet buffer, `tvb` is a name used within Wireshark
     proto_tree: *mut proto_tree,
-    p_pinfo: *const packet_info,
-    tcpd: *const tcp_analysis,
+    p_packet_info: *const packet_info,
+    tcpd: *const tcp_analysis, // Data from TCP dissector, `tcpd` is a name used within Wireshark
 ) -> c_int {
-    let info = get_ref(p_info);
-    let pinfo = get_ref(p_pinfo);
+    let dissector_info = get_ref(p_dissector_info);
+    let packet_info = get_ref(p_packet_info);
 
-    let conv = Conversation::get_or_create(tcpd);
+    // Obtain a conversation for this TCP connection
+    let conversation = Conversation::get_or_create(tcpd);
 
-    match conv.process_packet(info, pinfo, tvb, proto_tree, tcpd) {
+    // Process one concrete packet from the TCP connection.
+    // Conversation stores all data necessary to decrypt Tezos connection
+    // and it also caches intermediate results for case when packets are exposed
+    // in order that is different from their appearance within TCP stream.
+    match conversation.process_packet(dissector_info, packet_info, tvb, proto_tree, tcpd) {
         Err(e) => {
             msg(format!("E: Cannot process packet: {}", e));
-            proto_tree_add_string(proto_tree, info.hf_error, tvb, 0, 0, format!("{}", e));
+            proto_tree_add_string(
+                proto_tree,
+                dissector_info.hf_error,
+                tvb,
+                0,
+                0,
+                format!("{}", e),
+            );
             0 as c_int
         }
         Ok(size) => size as c_int,

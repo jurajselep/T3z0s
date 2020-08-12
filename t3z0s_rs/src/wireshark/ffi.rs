@@ -23,6 +23,14 @@ pub struct proto_tree {
     _private: [u8; 0],
 }
 
+// Functions from Wireshark.
+// tvb_ -- Functions for getting informations from packet buffer.
+//         See wireshark/epan/tvbuff.h.
+//         tvb means packet buffer.
+// proto_tree_ -- Manipulates with the tree that represents dissected frame (packet).
+//                See wireshark/epan/proto.h.
+//                proto_tree means tree-like structure that visualizes the parts of
+//                dissected packet in wireshark interface.
 extern "C" {
     pub(super) fn tvb_get_guint8(tvb: *mut tvbuff_t, offset: c_int /* gint */) -> u8;
     pub(super) fn tvb_get_ptr(

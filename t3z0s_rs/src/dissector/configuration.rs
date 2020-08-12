@@ -39,6 +39,10 @@ impl Config {
     }
 }
 
+// Configuration is stored in global object.
+// We use single threaded C code based on callbacks so such singleton like
+// object seem acceptable. RwLock should be fast in this case and it doesn't
+// require unsafe.
 lazy_static! {
     static ref CONFIG_RWLOCK: RwLock<Option<Config>> = RwLock::new(None);
 }
@@ -69,9 +73,12 @@ fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Err
 /// Called by Wireshark when module preferences change
 pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char) {
     if identity_json_filepath.is_null() {
+        // Interpret C NULL as a Rust None
         let mut cfg = CONFIG_RWLOCK.write().unwrap();
         *cfg = None;
     } else {
+        // Load identity and store it to global object.
+        // Use None if identity can not be loaded.
         let cfg_res = load_preferences(identity_json_filepath);
         let mut cfg = CONFIG_RWLOCK.write().unwrap();
         *cfg = match cfg_res {
