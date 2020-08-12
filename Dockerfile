@@ -1,4 +1,5 @@
-FROM meavelabs/t3z0s:rust as builder
+FROM meavelabs/t3z0s:rust-nightly-20200726 as builder
+USER root
 WORKDIR /home/appuser
 COPY . .
 ENV SODIUM_SHARED=1

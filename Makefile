@@ -27,8 +27,6 @@ symlink-for-wireshark:
 
 .PHONY: call-bindgen
 call-bindgen:
-	cargo install bindgen
-	rustup component add rustfmt
 	cd "${WIRESHARK_PATH}" && rm -fv "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" && bindgen --no-rustfmt-bindings "epan/packet.h" -o "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs" -- -I. $(shell pkg-config --cflags glib-2.0)
 	cd "${WIRESHARK_PATH}" && rustfmt "${T3Z0S_PATH}/t3z0s_rs/src/wireshark/packet.rs"
 
@@ -116,6 +114,11 @@ test-tshark-with-carthagenet:
 
 ############################################################
 # docker-images
+
+.PHONY: rust-nightly-docker-image
+rust-nightly-docker-image:
+	docker build dockers/rust-nightly-20200726 -t meavelabs/t3z0s:rust-nightly-20200726
+
 .PHONY: test-docker-image
 test-docker-image: clone-wireshark
 	docker build . -t t3z0s/test
