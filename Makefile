@@ -46,7 +46,7 @@ symlink-of-lib:
 
 .PHONY: build-wireshark
 build-wireshark: symlink-of-lib
-	cd "${WIRESHARK_PATH}" && mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX="${WIRESHARK_OPT_PATH}" && make
+	cd "${WIRESHARK_PATH}" && mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX="${WIRESHARK_OPT_PATH}" && make -j16
 
 .PHONY: build
 build: build-t3z0s build-wireshark
