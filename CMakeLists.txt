@@ -7,10 +7,10 @@
 include(WiresharkPlugin)
 
 # Plugin name and version info (major minor micro extra)
-set_module_info(t3z0s 0 0 1 0)
+set_module_info(tezos 0 0 1 0)
 
 set(DISSECTOR_SRC
-    t3z0s.c
+    tezos.c
 )
 
 set(PLUGIN_FILES
@@ -37,18 +37,18 @@ register_plugin_files(plugin.c
 	${DISSECTOR_SRC}
 )
 
-add_plugin_library(t3z0s epan)
+add_plugin_library(tezos epan)
 
-target_link_libraries(t3z0s epan)
-target_link_libraries(t3z0s t3z0s_rs)
-target_link_libraries(t3z0s sodium)
+target_link_libraries(tezos epan)
+target_link_libraries(tezos tezos_rs)
+target_link_libraries(tezos sodium)
 
-install_plugin(t3z0s epan)
+install_plugin(tezos epan)
 
 file(GLOB DISSECTOR_HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.h")
 CHECKAPI(
 	NAME
-	  t3z0s
+	  tezos
 	SWITCHES
 	  -g abort -g termoutput -build
 	SOURCES

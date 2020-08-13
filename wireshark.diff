@@ -9,7 +9,7 @@ index 559a1522dc..41718f5f23 100644
 +	link_directories(build/run)
  	set(PLUGIN_SRC_DIRS
  		plugins/epan/ethercat
-+		plugins/epan/t3z0s
++		plugins/epan/tezos
  		plugins/epan/gryphon
  		plugins/epan/irda
  		plugins/epan/mate

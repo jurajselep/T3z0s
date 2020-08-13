@@ -1,4 +1,4 @@
-FROM meavelabs/t3z0s:rust-nightly-20200726 as builder
+FROM meavelabs/rust:nightly-20200726 as builder
 USER root
 WORKDIR /home/appuser
 COPY . .

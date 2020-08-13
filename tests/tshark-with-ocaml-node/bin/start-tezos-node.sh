@@ -8,7 +8,7 @@ TEZOS_NETWORK=carthagenet
 whoami
 counter=0
 until [ "$counter" -gt 1000 -o -f "$TSHARK_READY" ]; do sleep 1; done
-cp -vf /usr/local/T3z0s/configs/identity.json /var/run/tezos/node/data
+cp -vf /usr/local/Tezos/configs/identity.json /var/run/tezos/node/data
 
 find / -name identity.json
 

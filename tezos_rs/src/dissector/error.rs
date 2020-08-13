@@ -2,26 +2,26 @@ use std::error;
 use std::fmt;
 
 #[derive(Debug, Clone)]
-pub struct NotT3z0sStreamError;
-impl fmt::Display for NotT3z0sStreamError {
+pub struct NotTezosStreamError;
+impl fmt::Display for NotTezosStreamError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "not a t3z0s stream")
+        write!(f, "not a tezos stream")
     }
 }
-impl error::Error for NotT3z0sStreamError {
+impl error::Error for NotTezosStreamError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct T3z0sNodeIdentityNotLoadedError;
-impl fmt::Display for T3z0sNodeIdentityNotLoadedError {
+pub struct TezosNodeIdentityNotLoadedError;
+impl fmt::Display for TezosNodeIdentityNotLoadedError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "t3z0s node identity not loaded")
+        write!(f, "tezos node identity not loaded")
     }
 }
-impl error::Error for T3z0sNodeIdentityNotLoadedError {
+impl error::Error for TezosNodeIdentityNotLoadedError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }
@@ -31,7 +31,7 @@ impl error::Error for T3z0sNodeIdentityNotLoadedError {
 pub struct UnknownDecrypterError;
 impl fmt::Display for UnknownDecrypterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "t3z0s decypter unknown")
+        write!(f, "tezos decypter unknown")
     }
 }
 impl error::Error for UnknownDecrypterError {
@@ -44,7 +44,7 @@ impl error::Error for UnknownDecrypterError {
 pub struct PeerNotUpgradedError;
 impl fmt::Display for PeerNotUpgradedError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "t3z0s peer not upgraded")
+        write!(f, "tezos peer not upgraded")
     }
 }
 impl error::Error for PeerNotUpgradedError {

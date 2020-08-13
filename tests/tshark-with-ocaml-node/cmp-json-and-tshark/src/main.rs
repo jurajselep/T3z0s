@@ -200,11 +200,11 @@ fn parse_tshark(file_path: &str) -> Result<TsharkData, Error> {
     let mut dst_addr_opt: Option<SocketAddr> = None;
 
     let re_empty_line = Regex::new(r"^\s*$")?;
-    let re_conversation = Regex::new(r"T3z0s conversation: (0x[a-zA-Z0-9]+)")?;
-    let re_conn_msg = Regex::new(r"T3z0s Connection Msg: (.+)$")?;
-    let re_decrypted_msg = Regex::new(r"T3z0s Decrypted Msg: (.+)$")?;
-    let re_src_ip = Regex::new(r"T3z0s Debug: srcaddr:V[46][(]([^)]+)[)]")?;
-    let re_dst_ip = Regex::new(r"T3z0s Debug: dstaddr:V[46][(]([^)]+)[)]")?;
+    let re_conversation = Regex::new(r"Tezos conversation: (0x[a-zA-Z0-9]+)")?;
+    let re_conn_msg = Regex::new(r"Tezos Connection Msg: (.+)$")?;
+    let re_decrypted_msg = Regex::new(r"Tezos Decrypted Msg: (.+)$")?;
+    let re_src_ip = Regex::new(r"Tezos Debug: srcaddr:V[46][(]([^)]+)[)]")?;
+    let re_dst_ip = Regex::new(r"Tezos Debug: dstaddr:V[46][(]([^)]+)[)]")?;
 
     let mut ret = TsharkData::default();
 

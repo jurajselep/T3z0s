@@ -71,7 +71,7 @@ fn load_preferences(identity_json_filepath: *const c_char) -> Result<Config, Err
 
 #[no_mangle]
 /// Called by Wireshark when module preferences change
-pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char) {
+pub extern "C" fn tezos_preferences_update(identity_json_filepath: *const c_char) {
     if identity_json_filepath.is_null() {
         // Interpret C NULL as a Rust None
         let mut cfg = CONFIG_RWLOCK.write().unwrap();
@@ -94,7 +94,7 @@ pub extern "C" fn t3z0s_preferences_update(identity_json_filepath: *const c_char
 // Because we interact with single threaded callback based C code,
 // it is practical to use singletons.
 
-/// Return current version of configuration (as specified by last call to t3z0s_preferences_update())
+/// Return current version of configuration (as specified by last call to tezos_preferences_update())
 pub(crate) fn get_configuration() -> Option<Config> {
     msg(format!("get_configuration"));
     let cfg = CONFIG_RWLOCK.read().unwrap();

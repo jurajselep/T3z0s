@@ -11,10 +11,10 @@ Ubuntu 20.04 Build
 Verify that plugin is installed
 -------------------------------
 
-               $ run/tshark -G plugins | grep -i t3z0s
-               t3z0s.so 0.0.1 dissector /usr/local/lib/wireshark/plugins/3.3/epan/t3z0s.so
-               $ run/tshark -G protocols | grep -i t3z0s
-               T3z0s Protocol  t3z0s   t3z0s
+               $ run/tshark -G plugins | grep -i tezos
+               tezos.so 0.0.1 dissector /usr/local/lib/wireshark/plugins/3.3/epan/tezos.so
+               $ run/tshark -G protocols | grep -i tezos
+               Tezos Protocol  tezos   tezos
 
 Simple Session
 --------------
@@ -22,11 +22,11 @@ Simple Session
 - Terminal 1:
 
                $ run/tshark -r /tmp/xyz.pcap
-                   1 0.000000000    127.0.0.1 ? 127.0.0.1    t3z0s 58
+                   1 0.000000000    127.0.0.1 ? 127.0.0.1    tezos 58
                    ...
-                   3 1.147193109    127.0.0.1 ? 127.0.0.1    t3z0s 58
+                   3 1.147193109    127.0.0.1 ? 127.0.0.1    tezos 58
                    ...
-                   5 1.842787799    127.0.0.1 ? 127.0.0.1    t3z0s 58
+                   5 1.842787799    127.0.0.1 ? 127.0.0.1    tezos 58
 
                 $ run/tshark -Vr /tmp/xyz.pcap
                    ...
@@ -63,9 +63,9 @@ Simple Session
                         [Checksum Status: Unverified]
                         [Stream index: 2]
                         UDP payload (16 bytes)
-                T3z0s Protocol
-                        T3z0s conversation: 0x7f0b31574890
-                        [truncated]T3z0s Msg: counter:1; addr_local:172.18.0.2:60064; addr_remote:51.15.220.7:9732; conn_msg_local:Some(ConnectionMessage { port: 19732, versions: [Version { chain_name: "TEZOS_ALPHANET_CARTHAGE_2019-11-28T13:02:13Z", distributed
+                Tezos Protocol
+                        Tezos conversation: 0x7f0b31574890
+                        [truncated]Tezos Msg: counter:1; addr_local:172.18.0.2:60064; addr_remote:51.15.220.7:9732; conn_msg_local:Some(ConnectionMessage { port: 19732, versions: [Version { chain_name: "TEZOS_ALPHANET_CARTHAGE_2019-11-28T13:02:13Z", distributed
 
 Currently, `tshark` generates debug log to `/tmp/xyz.log`, it is used only for development and contains eg. informations about analysed packets:
 

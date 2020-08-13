@@ -33,7 +33,7 @@ use dissector::configuration::{get_configuration, Config};
 use dissector::conversation::Conversation;
 use dissector::dissector_info::T3zosDissectorInfo;
 use dissector::error::{
-    NotT3z0sStreamError, PeerNotUpgradedError, T3z0sNodeIdentityNotLoadedError,
+    NotTezosStreamError, PeerNotUpgradedError, TezosNodeIdentityNotLoadedError,
     UnknownDecrypterError,
 };
 use dissector::logger::msg;

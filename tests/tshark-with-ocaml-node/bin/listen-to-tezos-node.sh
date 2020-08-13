@@ -7,7 +7,7 @@ PATH_LOG="$PATH_TMP/logs"
 
 TSHARK_LOG="$PATH_LOG/tshark.err"
 TSHARK_OUT="$PATH_LOG/tshark.out"
-T3Z0S_IDENTITY_FILE=$(realpath tests/configs/identity.json)
+TEZOS_IDENTITY_FILE=$(realpath tests/configs/identity.json)
 
 TSHARK_BIN=$(realpath 'opt/bin/tshark')
 
@@ -39,7 +39,7 @@ function wait4file {
 }
 
 function run_tshark {
-    "$TSHARK_BIN" -o t3z0s.identity_json_file:"$T3Z0S_IDENTITY_FILE" -i any -V >"$TSHARK_OUT" 2>"$TSHARK_LOG"&
+    "$TSHARK_BIN" -o tezos.identity_json_file:"$TEZOS_IDENTITY_FILE" -i any -V >"$TSHARK_OUT" 2>"$TSHARK_LOG"&
     local pid="$!"
 
     local counter=0
@@ -56,7 +56,7 @@ function run_tshark {
     while [ "$counter" -lt 100 ]; do
         check_pid_exists "$pid"
         local md5=$(cat "/proc/$pid/maps" | awk '{print$6}' | md5sum | awk '{print$1}')
-        [ "$md5" == "$prev_md5" ] && grep >/dev/null 't3z0s[.]so' "/proc/$pid/maps" && break
+        [ "$md5" == "$prev_md5" ] && grep >/dev/null 'tezos[.]so' "/proc/$pid/maps" && break
         prev_md5="$md5"
         counter=$((counter+1))
         sleep .1
@@ -79,9 +79,9 @@ mkdir -p "$PATH_TMP"
 mkdir -p "$PATH_LOG"
 
 # Wait until identity.json appears
-cp -v "$T3Z0S_IDENTITY_FILE" /var/run/tezos/node/identity.json 
+cp -v "$TEZOS_IDENTITY_FILE" /var/run/tezos/node/identity.json 
 counter=0
-while [ ! -e "$T3Z0S_IDENTITY_FILE" -a "$counter" -lt 100 ]; do
+while [ ! -e "$TEZOS_IDENTITY_FILE" -a "$counter" -lt 100 ]; do
     counter=$((counter+1))
     sleep 1
 done
@@ -95,7 +95,7 @@ sleep $((60*minutes))
 
 # Check that there are expected peer responses in the tshark output.
 msg... 'Looking for Tezos replies in tshark output'
-try... grep 'T3z0s Decrypted Msg: "peerresponse:PeerMessageResponse' "$TSHARK_OUT"
+try... grep 'Tezos Decrypted Msg: "peerresponse:PeerMessageResponse' "$TSHARK_OUT"
 
 cp -v "$TSHARK_OUT" '/tmp/tshark.out'
 wait4file '/tmp/peers.json'

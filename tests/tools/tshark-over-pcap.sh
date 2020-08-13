@@ -13,7 +13,7 @@ PATH_LOG="$PATH_TMP/logs"
 
 TSHARK_LOG="$PATH_LOG/tshark.err"
 TSHARK_OUT="$PATH_LOG/tshark.out"
-T3Z0S_IDENTITY_FILE=$(realpath tests/configs/identity.json)
+TEZOS_IDENTITY_FILE=$(realpath tests/configs/identity.json)
 
 PATH_PCAP=$(realpath "tests/data/cap-09.pcap")
 
@@ -38,7 +38,7 @@ function try... {
 
 function run_tshark {
     "$TSHARK_BIN" -o \
-        t3z0s.identity_json_file:"$T3Z0S_IDENTITY_FILE" \
+        tezos.identity_json_file:"$TEZOS_IDENTITY_FILE" \
         -Vr "$PATH_PCAP" >"$TSHARK_OUT" 2>"$TSHARK_LOG"
 }
 
@@ -52,9 +52,9 @@ run_tshark
 # Check that there is peer response in the tshark output.
 
 msg... 'Looking for Tezos replies in tshark output'
-try... grep 'T3z0s Decrypted Msg: "peerresponse:PeerMessageResponse' "$TSHARK_OUT"
+try... grep 'Tezos Decrypted Msg: "peerresponse:PeerMessageResponse' "$TSHARK_OUT"
 
 msg... 'Looking for Tezos replies at the end of the tshark output'
-try... grep 'T3z0s Decrypted Msg: "peerresponse:PeerMessageResponse' <(tail "$TSHARK_OUT")
+try... grep 'Tezos Decrypted Msg: "peerresponse:PeerMessageResponse' <(tail "$TSHARK_OUT")
 
 echo "$0: Tests passed :-)"

@@ -8,7 +8,7 @@ volumes:
 services:
   tshark:
     user: root
-    image: t3z0s/test:latest
+    image: meavelabs/tshark:latest
     hostname: tshark
     command: /home/appuser/tests/tshark-with-ocaml-node/bin/listen-to-tezos-node.sh
     volumes:
@@ -18,13 +18,13 @@ services:
     restart: "no"
   tezos_node:
     user: root
-    image: t3z0s/tezos:v7.3
+    image: meavelabs/tezos:v7.3
     depends_on:
       - tshark
     network_mode: "service:tshark"
     privileged: true
 #    hostname: node
-    entrypoint: /usr/local/T3z0s/bin/start-tezos-node.sh
+    entrypoint: /usr/local/Tezos/bin/start-tezos-node.sh
 #    ports:
 #      - "19732:19732"
 #    expose:

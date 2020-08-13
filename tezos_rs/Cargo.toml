@@ -1,11 +1,11 @@
 [package]
-name = "t3z0s_rs"
+name = "tezos_rs"
 version = "0.1.0"
 authors = ["Daniel Fiala <freelancer@meave.biz>"]
 edition = "2018"
 
 [lib]
-name = "t3z0s_rs"
+name = "tezos_rs"
 path = "src/lib.rs"
 crate-type = ["staticlib"]
 # Dynamic library has more complicated linking, let'd disable it now...
