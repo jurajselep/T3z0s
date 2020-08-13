@@ -24,8 +24,6 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
 RUN [ "/bin/chown", "-R", "appuser:appuser", "." ]
 USER appuser
 RUN [ "/bin/bash" , "-c" , "source .cargo/env && \
-    rustup install nightly && \
-    rustup default nightly && \
     make prepare && make install-cmp-json-and-tshark && \
     make install" ]
 USER root
