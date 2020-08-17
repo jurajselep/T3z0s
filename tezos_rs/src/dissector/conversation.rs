@@ -1,6 +1,7 @@
 extern crate libc;
 
 use libc::{c_char, c_int, c_uint, c_void};
+use serde::{Deserialize, Serialize};
 use std::{
     boxed::Box,
     collections::HashMap,
@@ -28,7 +29,9 @@ use crate::network::{
 };
 
 use crate::wireshark::packet::packet_info;
-use crate::wireshark::{get_data, proto_tree, proto_tree_add_string, tcp_analysis, tvbuff_t};
+use crate::wireshark::{
+    get_data, proto_tree, proto_tree_add_multiline, proto_tree_add_string, tcp_analysis, tvbuff_t,
+};
 
 use crate::dissector::configuration::{get_configuration, Config};
 use crate::dissector::dissector_info::T3zosDissectorInfo;
@@ -319,7 +322,7 @@ impl Conversation {
             tvb,
             0,
             0,
-            format!("srcaddr:{:?}", srcaddr),
+            &format!("srcaddr:{:?}", srcaddr),
         );
         proto_tree_add_string(
             proto_tree,
@@ -327,7 +330,7 @@ impl Conversation {
             tvb,
             0,
             0,
-            format!("dstaddr:{:?}", dstaddr),
+            &format!("dstaddr:{:?}", dstaddr),
         );
 
         // Get packet/frame from the cache and store its content to proto_tree.
@@ -342,7 +345,7 @@ impl Conversation {
                     tvb,
                     0,
                     0,
-                    format!("{}", e),
+                    &format!("{}", e),
                 );
             }
             Ok(ref item) => match item {
@@ -353,7 +356,7 @@ impl Conversation {
                         tvb,
                         0,
                         0,
-                        format!("No message"),
+                        &format!("No message"),
                     );
                 }
                 ConversationItem::ConnectionMsg { counter, ref msg } => {
@@ -363,7 +366,7 @@ impl Conversation {
                         tvb,
                         0,
                         0,
-                        format!("counter:{:?}", counter),
+                        &format!("counter:{}", counter),
                     );
                     proto_tree_add_string(
                         proto_tree,
@@ -371,7 +374,15 @@ impl Conversation {
                         tvb,
                         0,
                         0,
-                        format!("{:?}", msg),
+                        &format!("{:?}", msg),
+                    );
+                    proto_tree_add_multiline(
+                        proto_tree,
+                        dissector_info.hf_connection_msg,
+                        tvb,
+                        0,
+                        0,
+                        &serde_json::to_string_pretty(&msg).unwrap(),
                     );
                 }
                 ConversationItem::DecryptedMsg { counter, ref msg } => {
@@ -381,7 +392,7 @@ impl Conversation {
                         tvb,
                         0,
                         0,
-                        format!("counter:{:?}", counter),
+                        &format!("counter:{}", counter),
                     );
                     proto_tree_add_string(
                         proto_tree,
@@ -389,7 +400,15 @@ impl Conversation {
                         tvb,
                         0,
                         0,
-                        format!("{:?}", msg),
+                        &format!("{:?}", msg),
+                    );
+                    proto_tree_add_multiline(
+                        proto_tree,
+                        dissector_info.hf_decrypted_msg,
+                        tvb,
+                        0,
+                        0,
+                        &serde_json::to_string_pretty(&msg).unwrap(),
                     );
                 }
             },

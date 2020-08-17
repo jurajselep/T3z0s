@@ -60,6 +60,16 @@ extern "C" {
         retval: *mut *const u8,
         lenretval: *mut c_uint,
     );
+    pub(super) fn proto_tree_add_string_format(
+        proto_tree: *mut proto_tree,
+        hfindex: c_int,
+        tvb: *mut tvbuff_t,
+        start: c_int,
+        length: c_int,
+        value: *const c_char,
+        format: *const c_char,
+        ...
+    );
     pub(super) fn proto_tree_add_string_format_value(
         proto_tree: *mut proto_tree,
         hfindex: c_int,

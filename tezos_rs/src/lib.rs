@@ -82,7 +82,7 @@ pub extern "C" fn t3z03s_dissect_packet(
                 tvb,
                 0,
                 0,
-                format!("{}", e),
+                &format!("{}", e),
             );
             0 as c_int
         }

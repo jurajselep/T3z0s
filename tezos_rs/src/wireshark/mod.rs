@@ -117,7 +117,7 @@ pub(crate) fn proto_tree_add_string(
     tvb: *mut tvbuff_t,
     start: c_int,
     length: c_int,
-    value: String,
+    value: &str,
 ) {
     unsafe {
         let bytes_num = value.len();
@@ -134,6 +134,55 @@ pub(crate) fn proto_tree_add_string(
             bytes_num as c_int,
             b.as_ptr() as *const c_char,
         );
+    }
+}
+
+/// Add a string to a proto_tree, but does not include the label as a prefix.
+/// `proto_tree` means tree-like structure that visualizes parts of dissected packets.
+/// `hfindex` is id of the item (See crate::wireshark::dissector_info.rs)
+/// See wireshark/epan/proto.h.
+pub(crate) fn proto_tree_add_text(
+    proto_tree: *mut proto_tree,
+    hfindex: c_int,
+    tvb: *mut tvbuff_t,
+    start: c_int,
+    length: c_int,
+    value: &str,
+) {
+    unsafe {
+        let bytes_num = value.len();
+        let b = value.as_bytes();
+
+        ffi::proto_tree_add_string_format(
+            proto_tree,
+            hfindex,
+            tvb,
+            start,
+            length,
+            b.as_ptr() as *const c_char,
+            b"%.*s\0".as_ptr() as *const c_char,
+            bytes_num as c_int,
+            b.as_ptr() as *const c_char,
+        );
+    }
+}
+
+/// Add a string to a proto_tree. First line contains label, other lines
+/// contain lines of the string.
+/// `proto_tree` means tree-like structure that visualizes parts of dissected packets.
+/// `hfindex` is id of the item (See crate::wireshark::dissector_info.rs)
+/// See wireshark/epan/proto.h.
+pub(crate) fn proto_tree_add_multiline(
+    proto_tree: *mut proto_tree,
+    hfindex: c_int,
+    tvb: *mut tvbuff_t,
+    start: c_int,
+    length: c_int,
+    multiline: &str,
+) {
+    proto_tree_add_string(proto_tree, hfindex, tvb, start, length, "...");
+    for line in multiline.lines() {
+        proto_tree_add_text(proto_tree, hfindex, tvb, start, length, line);
     }
 }
 
