@@ -1,10 +1,9 @@
 use crypto::hash::HashType;
 use failure::Error;
 use lazy_static::lazy_static;
-use libc::{c_char, c_int, c_uint, c_void};
+use libc::c_char;
 use serde::Deserialize;
 use std::ffi::CStr;
-use std::ffi::OsString;
 use std::fs;
 use std::option::Option;
 use std::sync::RwLock;

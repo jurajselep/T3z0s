@@ -1,41 +1,12 @@
 extern crate libc;
 
-use libc::{c_char, c_int, c_uint, c_void};
-use std::{
-    boxed::Box,
-    collections::HashMap,
-    convert::TryFrom,
-    ffi::CString,
-    net::IpAddr,
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    option::Option,
-};
-
-use failure::Error;
-
-use crypto::{
-    crypto_box::precompute,
-    hash::HashType,
-    nonce::{generate_nonces, NoncePair},
-};
-use std::fmt;
-use tezos_messages::p2p::binary_message::{cache::CachedData, BinaryChunk};
+use libc::{c_int, c_void};
 
 mod network;
-use network::{
-    connection_message::ConnectionMessage,
-    msg_decoder::{EncryptedMessage, EncryptedMessageDecoder},
-    raw_packet_msg::{RawMessageDirection, RawPacketMessage},
-};
 
 mod dissector;
-use dissector::configuration::{get_configuration, Config};
 use dissector::conversation::Conversation;
 use dissector::dissector_info::T3zosDissectorInfo;
-use dissector::error::{
-    NotTezosStreamError, PeerNotUpgradedError, TezosNodeIdentityNotLoadedError,
-    UnknownDecrypterError,
-};
 use dissector::logger::msg;
 
 mod wireshark;

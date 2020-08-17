@@ -1,16 +1,6 @@
 extern crate libc;
 
-use libc::{c_char, c_int, c_uint, c_void};
-use serde::{Deserialize, Serialize};
-use std::{
-    boxed::Box,
-    collections::HashMap,
-    convert::TryFrom,
-    ffi::CString,
-    net::IpAddr,
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    option::Option,
-};
+use std::{collections::HashMap, convert::TryFrom, net::IpAddr, net::SocketAddr, option::Option};
 
 use failure::Error;
 
