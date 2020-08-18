@@ -20,6 +20,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
     ripgrep
 RUN useradd -mU appuser
 USER appuser
+WORKDIR /home/appuser/
 RUN [ "/bin/bash" , "-c" , "cd && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs >.rust.sh && \
     sh .rust.sh -y && rm -v .rust.sh && source $HOME/.cargo/env && \
     cargo install bindgen && \
