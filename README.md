@@ -82,10 +82,22 @@ and configure path to identity file through menu: `Edit |> Preferences |> Protoc
 * Build Tezos node container:
 
   ```
+  dissector-source-root $ docker build tests/tshark-with-ocaml-node -t meavelabs/tezos:v7.3
+  ```
+  
+  * Or you can use `make`:
+  
+  ```
   dissector-source-root $ make tezos-docker-image
   ```
 
 - Build Rust nightly container:
+
+  ```
+  docker build dockers/rust-nightly-20200726 -t meavelabs/rust:nightly-20200726
+  ```
+
+  * Or you can use `make`:
 
   ```
   dissector-source-root $ make rust-nightly-docker-image
@@ -94,13 +106,48 @@ and configure path to identity file through menu: `Edit |> Preferences |> Protoc
 - Build container with wireshark/tshark (it takes a long time and container is quite big):
 
   ```
+  dissector-source-root $ docker build . -t meavelabs/tshark:latest
+  ```
+
+  * Or use `make`:
+
+  ```
   dissector-source-root $ make test-docker-image
   ```
 
-- Run combined test: It runs tezos node and tshark node that listens for about 5 minutes for Tezos messages:
+- Now, you can run combined test: It runs Tezos node and tshark node together. `tshark` listens for about 5 minutes for Tezos messages and then the test checks whether some messages were decrypted:
+
+  ```
+  dissector-source-root/tests/tshark-with-ocaml-node $ docker-compose rm --force ; docker-compose up
+  ```
+
+  * Again, you can use `make`:
 
   ```
   dissector-source-root $ make test-tshark-with-carthagenet
   ```
 
   
+
+  ## Running of tshark docker node together with Tezos node
+
+* You will work in two terminals. In the first terminal, run Tezos node to make sure it generates identity:
+
+```
+$ docker run -v ~/node-data:/var/run/tezos/node -u 0 -it tezos/tezos:v7.3 tezos-node --net-addr :19732 --network carthagenet
+```
+
+- Stop it after it prints: `node.main: read identity file (peer_id = ...)`.
+- Run `tshark` node in another terminal and ask it to load identity from Tezos node:
+
+```
+$ docker run -v ~/node-data:/var/run/tezos/node -u 0 -it --name tshark meavelabs/tshark:latest /home/appuser/opt/bin/tshark -o tezos.identity_json_file:/var/run/tezos/node/data/identity.json -i any -V
+```
+
+- When `tshark` starts to listen to `any`interface, return to previous terminal and run Tezos node again. This time, force it to share network card with `tshark` node:
+
+```
+$ docker run -v ~/node-data:/var/run/tezos/node --net container:tshark --name tezos_node -u 0 -it tezos/tezos:v7.3 tezos-node --net-addr :19732 --network carthagenet
+```
+
+* You can replace `~/node-data` with different directory, but it must be the same for every command.
