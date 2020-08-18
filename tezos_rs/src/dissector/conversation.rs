@@ -84,7 +84,7 @@ impl Conversation {
         }
     }
 
-    /// Check whether Conversation is in state when it wikk be able to decrypt messages
+    /// Check whether Conversation is in a state that it will be able to decrypt messages
     fn is_ok(&self) -> bool {
         match self.counter {
             0 => true,
@@ -324,7 +324,7 @@ impl Conversation {
         );
 
         // Get packet/frame from the cache and store its content to proto_tree.
-        // `proto_tree` is ised internally by Wireshark to display content of
+        // `proto_tree` is used internally by Wireshark to display content of
         // dissected packets.
         let res_item = self.frames.get(&frame_num).unwrap();
         let item = match res_item {
