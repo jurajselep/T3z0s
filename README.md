@@ -115,7 +115,19 @@ and configure path to identity file through menu: `Edit |> Preferences |> Protoc
   dissector-source-root $ make test-docker-image
   ```
 
-- Now, you can run combined test: It runs Tezos node and tshark node together. `tshark` listens for about 5 minutes for Tezos messages and then the test checks whether some messages were decrypted:
+- Now you can also build image `meavelabs/tshark_bin:latest` that contains only `tshark` binary and necessary libraries:
+
+  ```
+  docker build dockers/tshark-bin -t meavelabs/tshark_bin:latest
+  ```
+
+  * Or use `make`:
+
+  ```
+  make tshark-bin-image
+  ```
+
+- At this moment, you can run combined test: It runs Tezos node and tshark node together. `tshark` listens for about 5 minutes for Tezos messages and then the test checks whether some messages were decrypted:
 
   ```
   dissector-source-root/tests/tshark-with-ocaml-node $ docker-compose rm --force ; docker-compose up
@@ -144,10 +156,15 @@ $ docker run -v ~/node-data:/var/run/tezos/node -u 0 -it tezos/tezos:v7.3 tezos-
 $ docker run -v ~/node-data:/var/run/tezos/node -u 0 -it --name tshark meavelabs/tshark:latest /home/appuser/opt/bin/tshark -o tezos.identity_json_file:/var/run/tezos/node/data/identity.json -i any -V
 ```
 
+- Image `meavelabs/tshark:latest` is used for development and is quite large. You can use image `meavelabs/tshark_bin:latest` that is much smaller:
+
+```
+docker run -v ~/node-data:/var/run/tezos/node -u 0 -it --name tshark meavelabs/tshark_bin:latest /home/appuser/opt/bin/tshark -o tezos.identity_json_file:/var/run/tezos/node/data/identity.json -i any -V
+```
+
 - When `tshark` starts to listen to `any`interface, return to previous terminal and run Tezos node again. This time, force it to share network card with `tshark` node:
 
 ```
 $ docker run -v ~/node-data:/var/run/tezos/node --net container:tshark --name tezos_node -u 0 -it tezos/tezos:v7.3 tezos-node --net-addr :19732 --network carthagenet
 ```
-
 * You can replace `~/node-data` with different directory, but it must be the same for every command.
