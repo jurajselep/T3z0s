@@ -125,7 +125,8 @@ test-docker-image: clone-wireshark
 
 .PHONY: tshark-bin-image
 tshark-bin-image:
-	docker build docker/tshark-bin -t meavelabs/tshark:latest
+	docker build dockers/tshark-bin -t meavelabs/tshark_bin:latest
+
 
 .PHONY: tezos-docker-image
 tezos-docker-image:
