@@ -123,6 +123,10 @@ rust-nightly-docker-image:
 test-docker-image: clone-wireshark
 	docker build . -t meavelabs/tshark:latest
 
+.PHONY: tshark-bin-image
+tshark-bin-image:
+	docker build docker/tshark-bin -t meavelabs/tshark:latest
+
 .PHONY: tezos-docker-image
 tezos-docker-image:
 	docker build tests/tshark-with-ocaml-node -t meavelabs/tezos:v7.3
